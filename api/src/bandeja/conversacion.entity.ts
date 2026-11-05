@@ -35,4 +35,6 @@ export class Conversacion {
   @Column({ name: 'ultimo_entrante_en', type: 'timestamptz', nullable: true })
   ultimoEntranteEn: Date | null;
   @Column({ name: 'no_leidos', type: 'int', default: 0 }) noLeidos: number;
+  // Respuesta propuesta por la IA cuando la empresa usa el modo "propone".
+  @Column({ type: 'text', nullable: true }) borrador: string | null;
 }

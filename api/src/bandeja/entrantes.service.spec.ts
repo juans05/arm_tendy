@@ -8,6 +8,7 @@ import { Conversacion } from './conversacion.entity';
 import { EntrantesService } from './entrantes.service';
 import { EventoBandeja, EventosService } from './eventos.service';
 import { Mensaje } from './mensaje.entity';
+import { Lead } from '../leads/lead.entity';
 
 describe('EntrantesService', () => {
   let db: DataSource;
@@ -197,6 +198,28 @@ describe('EntrantesService', () => {
       sourceType: 'ad',
       sourceUrl: 'u',
       headline: 'h',
+    });
+  });
+
+  it('el mensaje del cliente crea un lead con el anuncio que lo trajo; el eco no', async () => {
+    await crearNumero(db, 'wuarikes', 'ph1');
+    await svc.procesar(
+      payloadTexto('ph1', 'wamid.1', 'Hola', '51911', {
+        referral: {
+          source_id: 'ad1',
+          source_type: 'ad',
+          source_url: 'u',
+          headline: 'h',
+        },
+      }),
+    );
+    await svc.procesar(payloadTexto('ph1', 'wamid.2', 'Sigo aquí'));
+    const leads = await db.getRepository(Lead).find();
+    expect(leads).toHaveLength(1);
+    expect(leads[0]).toMatchObject({
+      tenant: 'wuarikes',
+      etapa: 'nuevo',
+      referral: { sourceId: 'ad1' },
     });
   });
 });

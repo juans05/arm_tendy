@@ -113,6 +113,18 @@ export class EntrantesService {
       if (!id) return null;
 
       const entrante = nuevo.direccion === 'entrante';
+      // Cada conversación con un cliente es un lead; se guarda el anuncio que lo trajo (el primero que llegue).
+      if (entrante)
+        await em.query(
+          `INSERT INTO leads (tenant, conversacion_id, contacto_id, referral)
+           SELECT $1, c.id, c.contacto_id, $3::jsonb FROM conversaciones c WHERE c.id = $2
+           ON CONFLICT (conversacion_id) DO UPDATE SET referral = COALESCE(leads.referral, EXCLUDED.referral)`,
+          [
+            tenant,
+            conversacionId,
+            nuevo.referral ? JSON.stringify(nuevo.referral) : null,
+          ],
+        );
       await em.query(
         `UPDATE conversaciones SET ultimo_mensaje_en = GREATEST(ultimo_mensaje_en, $2),
            ultimo_entrante_en = CASE WHEN $3 THEN GREATEST(COALESCE(ultimo_entrante_en, $2), $2) ELSE ultimo_entrante_en END,

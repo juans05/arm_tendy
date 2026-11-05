@@ -11,5 +11,6 @@ import { EventosService } from './eventos.service';
   imports: [CanalesModule],
   controllers: [WebhookController, BandejaController],
   providers: [EntrantesService, EventosService, BandejaService],
+  exports: [EventosService, BandejaService],
 })
 export class BandejaModule {}

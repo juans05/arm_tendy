@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Post,
   Sse,
+  StreamableFile,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { DataSource } from 'typeorm';
@@ -48,6 +49,16 @@ export class BandejaController {
     @Body() dto: EnviarMensajeDto,
   ) {
     return this.bandeja.responder(m.tenant, id, m, dto.texto);
+  }
+
+  /** Imagen, audio o documento de un mensaje: se baja de Meta al vuelo (no se guarda en ARM). */
+  @Get('mensajes/:id/media')
+  async media(
+    @MiembroActual() m: Miembro,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    const { datos, mime } = await this.bandeja.media(m.tenant, id);
+    return new StreamableFile(datos, { type: mime });
   }
 
   // Tiempo real de la bandeja: solo eventos de la empresa del miembro.

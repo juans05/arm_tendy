@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { limpiarBase } from '../../test/util/app';
 import { crearDbTest } from '../../test/util/db';
 import { crearNumero, payloadTexto } from '../../test/util/whatsapp';
+import { MediaWhatsappService } from '../canales/media-whatsapp.service';
 import { EnvioWhatsappService } from '../canales/envio-whatsapp.service';
 import { MetaError, MetaGraph } from '../canales/meta-graph.client';
 import { Miembro } from '../miembros/miembro.entity';
@@ -50,7 +51,12 @@ describe('BandejaService', () => {
         return { messages: [{ id: 'wamid.salida' }] };
       },
     } as unknown as MetaGraph;
-    svc = new BandejaService(db, eventos, new EnvioWhatsappService(meta));
+    svc = new BandejaService(
+      db,
+      eventos,
+      new EnvioWhatsappService(meta),
+      new MediaWhatsappService(meta),
+    );
   });
 
   const conversacion = async (

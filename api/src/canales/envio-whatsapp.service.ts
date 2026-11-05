@@ -30,4 +30,29 @@ export class EnvioWhatsappService {
     if (!id) throw new MetaError('respuesta sin id de mensaje');
     return id;
   }
+
+  async enviarImagen(
+    numero: NumeroWhatsapp,
+    a: string,
+    mediaId: string,
+    texto?: string,
+  ): Promise<string> {
+    const r = await this.meta.llamar<{ messages?: { id: string }[] }>(
+      'POST',
+      `/${numero.phoneNumberId}/messages`,
+      {
+        token: numero.token,
+        body: {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: a,
+          type: 'image',
+          image: { id: mediaId, ...(texto ? { caption: texto } : {}) },
+        },
+      },
+    );
+    const id = r.messages?.[0]?.id;
+    if (!id) throw new MetaError('respuesta sin id de mensaje');
+    return id;
+  }
 }

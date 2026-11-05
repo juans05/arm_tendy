@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { EnvioWhatsappService } from '../canales/envio-whatsapp.service';
+import { MediaWhatsappService } from '../canales/media-whatsapp.service';
 import { Miembro } from '../miembros/miembro.entity';
 import { Conversacion, ModoConversacion } from './conversacion.entity';
 import { EventosService } from './eventos.service';
@@ -28,6 +29,7 @@ export class BandejaService {
     private readonly db: DataSource,
     private readonly eventos: EventosService,
     private readonly envio: EnvioWhatsappService,
+    private readonly mediaWa: MediaWhatsappService,
   ) {}
 
   // ponytail: las 200 conversaciones más recientes; paginar cuando una empresa tenga más.
@@ -100,12 +102,24 @@ export class BandejaService {
       await em.update(
         Conversacion,
         { id: conversacionId },
-        { modo: 'humano', ultimoMensajeEn: m.createdAt },
+        { modo: 'humano', ultimoMensajeEn: m.createdAt, borrador: null },
       );
       return m;
     });
     this.eventos.emitir(tenant, { tipo: 'mensaje', conversacionId, mensaje });
     return mensaje;
+  }
+
+  async media(
+    tenant: string,
+    mensajeId: string,
+  ): Promise<{ datos: Buffer; mime: string }> {
+    const m = await this.db
+      .getRepository(Mensaje)
+      .findOneBy({ id: mensajeId, tenant });
+    if (!m?.mediaId) throw new NotFoundException('El mensaje no tiene archivo');
+    const conv = await this.conversacion(tenant, m.conversacionId);
+    return this.mediaWa.descargar(conv.numero!, m.mediaId);
   }
 
   private async conversacion(
