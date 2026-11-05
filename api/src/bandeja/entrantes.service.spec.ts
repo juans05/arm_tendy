@@ -71,6 +71,19 @@ describe('EntrantesService', () => {
     ]);
   });
 
+  it('un mensaje que falla no descarta los demás del lote y el error sube (Meta reintenta)', async () => {
+    await crearNumero(db, 'wuarikes', 'ph1');
+    const malo = payloadTexto('ph1', 'wamid.malo', 'x', '9'.repeat(40));
+    const bueno = payloadTexto('ph1', 'wamid.ok', 'y');
+    malo.entry.push(...bueno.entry);
+
+    await expect(svc.procesar(malo)).rejects.toThrow();
+    const ids = (await db.getRepository(Mensaje).find()).map(
+      (m) => m.waMessageId,
+    );
+    expect(ids).toEqual(['wamid.ok']);
+  });
+
   it('mensaje duplicado se guarda una vez', async () => {
     await crearNumero(db, 'wuarikes', 'ph1');
     await svc.procesar(payloadTexto('ph1', 'wamid.1'));

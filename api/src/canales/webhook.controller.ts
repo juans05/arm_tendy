@@ -5,7 +5,6 @@ import {
   Headers,
   HttpCode,
   InternalServerErrorException,
-  Logger,
   Post,
   Query,
   RawBodyRequest,
@@ -21,8 +20,6 @@ import { verifyMetaSignature } from './meta-webhook.util';
 @Public()
 @Controller('webhooks/whatsapp')
 export class WebhookController {
-  private readonly log = new Logger(WebhookController.name);
-
   constructor(private readonly entrantes: EntrantesService) {}
 
   @Get()
@@ -39,7 +36,7 @@ export class WebhookController {
 
   @Post()
   @HttpCode(200)
-  recibir(
+  async recibir(
     @Req() req: RawBodyRequest<Request>,
     @Headers('x-hub-signature-256') firma?: string,
   ) {
@@ -48,12 +45,9 @@ export class WebhookController {
       throw new InternalServerErrorException('META_APP_SECRET no configurado');
     if (!verifyMetaSignature(req.rawBody, firma, secreto))
       throw new UnauthorizedException('Firma inválida');
-    // Meta exige respuesta rápida: se procesa después de responder.
-    setImmediate(() =>
-      this.entrantes
-        .procesar(req.body)
-        .catch((e: Error) => this.log.error(`webhook: ${e.message}`, e.stack)),
-    );
+    // Se guarda antes de responder (son pocas consultas): si falla, el 500 hace que Meta reintente
+    // en vez de perder el mensaje. Procesar en segundo plano tras el 200 lo perdía si la base fallaba.
+    await this.entrantes.procesar(req.body);
     return 'EVENT_RECEIVED';
   }
 }

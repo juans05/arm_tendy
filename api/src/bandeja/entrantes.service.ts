@@ -30,32 +30,46 @@ export class EntrantesService {
     private readonly eventos: EventosService,
   ) {}
 
+  // Cada mensaje va aparte: uno que falla no impide guardar los demás. Al final el error sube
+  // para que el webhook responda 500 y Meta reintente; lo ya guardado se salta por wa_message_id.
   async procesar(payload: unknown): Promise<void> {
-    for (const e of parseMetaWebhook(payload)) {
-      await this.guardar(e.phoneNumberId, e.from, e.nombre, e.timestamp, {
-        direccion: 'entrante',
-        origen: 'cliente',
-        tipo: e.tipo,
-        texto: e.texto,
-        mediaId: e.mediaId,
-        mimeType: e.mimeType,
-        waMessageId: e.waMessageId,
-        referral: e.referral,
+    const errores: Error[] = [];
+    const intentar = (p: Promise<void>) =>
+      p.catch((e: Error) => {
+        this.log.error(`webhook: ${e.message}`, e.stack);
+        errores.push(e);
       });
+    for (const e of parseMetaWebhook(payload)) {
+      await intentar(
+        this.guardar(e.phoneNumberId, e.from, e.nombre, e.timestamp, {
+          direccion: 'entrante',
+          origen: 'cliente',
+          tipo: e.tipo,
+          texto: e.texto,
+          mediaId: e.mediaId,
+          mimeType: e.mimeType,
+          waMessageId: e.waMessageId,
+          referral: e.referral,
+        }),
+      );
     }
     // Lo que el negocio respondió desde la app del celular (coexistencia): desde ahí atiende un humano.
     for (const e of parseMessageEchoes(payload)) {
-      await this.guardar(e.phoneNumberId, e.to, null, new Date(), {
-        direccion: 'saliente',
-        origen: 'app_celular',
-        tipo: 'text',
-        texto: e.body,
-        mediaId: null,
-        mimeType: null,
-        waMessageId: e.messageId,
-        referral: null,
-      });
+      await intentar(
+        this.guardar(e.phoneNumberId, e.to, null, new Date(), {
+          direccion: 'saliente',
+          origen: 'app_celular',
+          tipo: 'text',
+          texto: e.body,
+          mediaId: null,
+          mimeType: null,
+          waMessageId: e.messageId,
+          referral: null,
+        }),
+      );
     }
+    if (errores.length)
+      throw new Error(`No se guardaron ${errores.length} mensajes del webhook`);
   }
 
   private async guardar(

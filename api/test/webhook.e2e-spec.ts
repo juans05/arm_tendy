@@ -12,19 +12,6 @@ const firmar = (cuerpo: string) =>
     .update(cuerpo)
     .digest('hex');
 
-async function esperar<T>(
-  fn: () => Promise<T>,
-  ok: (v: T) => boolean,
-  ms = 2000,
-): Promise<T> {
-  const fin = Date.now() + ms;
-  for (;;) {
-    const v = await fn();
-    if (ok(v) || Date.now() > fin) return v;
-    await new Promise((r) => setTimeout(r, 50));
-  }
-}
-
 describe('Webhook WhatsApp (e2e)', () => {
   let app: INestApplication;
   let db: DataSource;
@@ -81,10 +68,23 @@ describe('Webhook WhatsApp (e2e)', () => {
       .set('X-Hub-Signature-256', firmar(cuerpo))
       .send(cuerpo);
     expect(r.status).toBe(200);
-    const m = await esperar(
-      () => db.getRepository(Mensaje).findOneBy({ waMessageId: 'wamid.bueno' }),
-      (v) => !!v,
-    );
+    // Se guarda antes de responder: si Meta recibe 200, el mensaje ya está en la base.
+    const m = await db
+      .getRepository(Mensaje)
+      .findOneBy({ waMessageId: 'wamid.bueno' });
     expect(m).toMatchObject({ tenant: 'wuarikes', texto: 'Hola ARM' });
+  });
+
+  it('si no se pudo guardar responde 500 para que Meta reintente', async () => {
+    await crearNumero(db, 'wuarikes', 'ph8');
+    const cuerpo = JSON.stringify(
+      payloadTexto('ph8', 'wamid.largo', 'x', '9'.repeat(40)),
+    );
+    const r = await http()
+      .post('/webhooks/whatsapp')
+      .set('Content-Type', 'application/json')
+      .set('X-Hub-Signature-256', firmar(cuerpo))
+      .send(cuerpo);
+    expect(r.status).toBe(500);
   });
 });
