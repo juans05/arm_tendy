@@ -13,5 +13,6 @@ Desarrollo local:
 docker compose up -d          # Postgres :5434 (bases arm y arm_test) y Redis :6380
 cd api && cp .env.example .env && npm i
 npm run migration:run && npm run start:dev   # :3001
+# En Railway: DB_MIGRATIONS_RUN=true aplica las migraciones al arrancar.
 npm test && npm run test:e2e
 ```
