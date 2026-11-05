@@ -33,23 +33,23 @@ export default function ElegirEmpresa() {
 
   return (
     <main className="mx-auto max-w-md space-y-4 p-6">
-      <h1 className="text-xl font-semibold">Tu empresa no tiene ARM contratado</h1>
-      <p className="text-sm text-slate-600">Si perteneces a otra empresa que sí lo tiene, elígela:</p>
+      <h1 className="font-display text-3xl font-bold">Tu empresa no tiene ARM contratado</h1>
+      <p className="text-sm text-gris">Si perteneces a otra empresa que sí lo tiene, elígela:</p>
       <ul className="space-y-2">
         {lista.map((e) => (
           <li key={e.tenantId}>
             <button
               onClick={() => elegir(e)}
               disabled={cambiando !== null}
-              className="w-full rounded border bg-white px-4 py-3 text-left hover:bg-slate-100 disabled:opacity-50"
+              className="w-full rounded border bg-white px-4 py-3 text-left hover:bg-papel disabled:opacity-50"
             >
-              {e.nombre} {e.activa && <span className="text-xs text-slate-500">(actual)</span>}
+              {e.nombre} {e.activa && <span className="text-xs text-gris">(actual)</span>}
               {cambiando === e.tenantId && <span className="ml-2 text-xs">Cambiando…</span>}
             </button>
           </li>
         ))}
       </ul>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-peligro">{error}</p>}
       <button className="text-sm underline" onClick={() => { borrarToken(); router.replace('/login'); }}>Salir</button>
     </main>
   );

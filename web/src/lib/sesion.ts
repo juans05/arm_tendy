@@ -5,7 +5,7 @@ export const leerToken = () => (typeof window === 'undefined' ? null : localStor
 export const guardarToken = (t: string) => localStorage.setItem(CLAVE, t);
 export const borrarToken = () => localStorage.removeItem(CLAVE);
 
-export type Destino = '/elegir-empresa' | '/pendiente' | '/login' | '/miembros' | '/lineas';
+export type Destino = '/elegir-empresa' | '/pendiente' | '/login' | '/bandeja';
 
 // Error a mostrar en el login si ARM no acepta la sesión recién creada (en vez de volver al login en silencio).
 export function errorTrasLogin(status: number): string | null {
@@ -21,5 +21,5 @@ export function destinoTrasMe(r: { status: number; code?: string; rol?: string; 
   if (r.status === 403 && (r.code === 'MIEMBRO_PENDIENTE' || r.code === 'MIEMBRO_INACTIVO')) return '/pendiente';
   if (r.status !== 200) return '/login';
   if (r.estado !== 'activo') return '/pendiente';
-  return r.rol === 'gerente' ? '/miembros' : '/lineas';
+  return '/bandeja';
 }

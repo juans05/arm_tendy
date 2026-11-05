@@ -1,1 +1,40 @@
 @import "tailwindcss";
+
+/* ARM: tinta azul profunda + mango. La tinta ordena, el mango señala lo que pide atención. */
+@theme {
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+
+  --color-tinta: #1d2645;
+  --color-tinta-2: #2b3660;
+  --color-papel: #f4f6fb;
+  --color-linea: #dfe4f0;
+  --color-gris: #67708a;
+  --color-mango: #ffb627;
+  --color-mango-suave: #fff1d1;
+  --color-menta: #1fae9f;
+  --color-menta-suave: #dcf5f2;
+  --color-uva: #6c55e8;
+  --color-uva-suave: #ebe7fd;
+  --color-peligro: #d6453d;
+}
+
+body {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-uva);
+  outline-offset: 2px;
+}
+
+/* Un solo momento de movimiento: el mensaje nuevo entra al chat. */
+@keyframes entra {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.entra { animation: entra 180ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .entra { animation: none; }
+}

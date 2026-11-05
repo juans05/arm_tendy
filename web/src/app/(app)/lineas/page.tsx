@@ -35,10 +35,10 @@ export default function Lineas() {
     setForm({ id: l.id, nombre: l.nombre, criterios: l.criterios, duracionDemoMin: l.duracionDemoMin, activa: l.activa, comercialIds: l.comerciales.filter((c) => c.estado === 'activo').map((c) => c.id) });
 
   return (
-    <section className="space-y-4">
+    <section className="mx-auto max-w-5xl space-y-4 px-4 py-6 md:px-8 md:py-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Líneas de producto</h1>
-        {esGerente && !form && <button className="rounded bg-slate-900 px-3 py-2 text-sm text-white" onClick={() => setForm(vacio)}>Nueva línea</button>}
+        <h1 className="font-display text-3xl font-bold">Líneas de producto</h1>
+        {esGerente && !form && <button className="rounded bg-tinta px-3 py-2 text-sm text-white" onClick={() => setForm(vacio)}>Nueva línea</button>}
       </div>
 
       {form && (
@@ -69,9 +69,9 @@ export default function Lineas() {
               ))}
             </div>
           </fieldset>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-peligro">{error}</p>}
           <div className="flex gap-3">
-            <button className="rounded bg-slate-900 px-4 py-2 text-sm text-white">Guardar</button>
+            <button className="rounded bg-tinta px-4 py-2 text-sm text-white">Guardar</button>
             <button type="button" className="text-sm underline" onClick={() => { setForm(null); setError(''); }}>Cancelar</button>
           </div>
         </form>
@@ -79,18 +79,18 @@ export default function Lineas() {
 
       <ul className="space-y-2">
         {lineas.map((l) => (
-          <li key={l.id} className="rounded border bg-white p-4">
+          <li key={l.id} className="rounded-xl border border-linea bg-white p-4">
             <div className="flex items-center justify-between">
-              <span className="font-medium">{l.nombre} {!l.activa && <span className="text-xs text-slate-500">(inactiva)</span>}</span>
+              <span className="font-medium">{l.nombre} {!l.activa && <span className="text-xs text-gris">(inactiva)</span>}</span>
               {esGerente && <button className="text-sm underline" onClick={() => editar(l)}>Editar</button>}
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-gris">
               Demo de {l.duracionDemoMin} min · {l.comerciales.length ? l.comerciales.map((c) => c.nombre).join(', ') : 'todos los que reciben demos'}
             </p>
             {l.criterios && <p className="mt-2 whitespace-pre-wrap text-sm">{l.criterios}</p>}
           </li>
         ))}
-        {!lineas.length && <li className="text-sm text-slate-500">Aún no hay líneas de producto.</li>}
+        {!lineas.length && <li className="text-sm text-gris">Aún no hay líneas de producto.</li>}
       </ul>
     </section>
   );
