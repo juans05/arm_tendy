@@ -10,7 +10,7 @@ export async function crearApp(
   process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
   const { AppModule } = await import('../../src/app.module');
   const modulo = await overrides(Test.createTestingModule({ imports: [AppModule] })).compile();
-  const app = modulo.createNestApplication();
+  const app = modulo.createNestApplication({ rawBody: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
   await limpiarBase(app.get(DataSource));

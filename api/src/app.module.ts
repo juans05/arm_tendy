@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SuiteAuthGuard } from './auth/suite-auth.guard';
 import { DatabaseConfig } from './config/database.config';
 import { HealthController } from './health/health.controller';
+import { BandejaModule } from './bandeja/bandeja.module';
 import { CanalesModule } from './canales/canales.module';
 import { LineasModule } from './lineas/lineas.module';
 import { MiembroActivoGuard } from './miembros/miembro-activo.guard';
@@ -20,6 +21,7 @@ import { RolesGuard } from './miembros/roles.guard';
     MiembrosModule,
     LineasModule,
     CanalesModule,
+    BandejaModule,
   ],
   controllers: [HealthController],
   // El orden importa: primero el token, luego el miembro, luego el rol.
