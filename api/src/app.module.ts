@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { SuiteAuthGuard } from './auth/suite-auth.guard';
 import { DatabaseConfig } from './config/database.config';
 import { HealthController } from './health/health.controller';
+import { LineasModule } from './lineas/lineas.module';
 import { MiembroActivoGuard } from './miembros/miembro-activo.guard';
 import { MiembrosModule } from './miembros/miembros.module';
 import { RolesGuard } from './miembros/roles.guard';
@@ -16,6 +17,7 @@ import { RolesGuard } from './miembros/roles.guard';
     TypeOrmModule.forRootAsync({ useClass: DatabaseConfig }),
     AuthModule,
     MiembrosModule,
+    LineasModule,
   ],
   controllers: [HealthController],
   // El orden importa: primero el token, luego el miembro, luego el rol.
