@@ -1,0 +1,26 @@
+import 'dotenv/config';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { Test, TestingModuleBuilder } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
+
+// App contra la base de pruebas, con migraciones aplicadas y tablas vacías.
+export async function crearApp(
+  overrides: (b: TestingModuleBuilder) => TestingModuleBuilder = (b) => b,
+): Promise<INestApplication> {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
+  const { AppModule } = await import('../../src/app.module');
+  const modulo = await overrides(Test.createTestingModule({ imports: [AppModule] })).compile();
+  const app = modulo.createNestApplication();
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  await app.init();
+  await limpiarBase(app.get(DataSource));
+  return app;
+}
+
+export async function limpiarBase(db: DataSource): Promise<void> {
+  await db.runMigrations();
+  const tablas: { tablename: string }[] = await db.query(
+    "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'migrations'",
+  );
+  if (tablas.length) await db.query(`TRUNCATE ${tablas.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
+}
