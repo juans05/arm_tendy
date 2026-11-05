@@ -10,6 +10,7 @@ export async function crearApp(
   process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
   // El barrido de cada minuto tocaría la base mientras las pruebas la vacían.
   process.env.BARRIDO ??= 'off';
+  process.env.LIMITE_POR_MINUTO ??= '100000';
   const { AppModule } = await import('../../src/app.module');
   const modulo = await overrides(
     Test.createTestingModule({ imports: [AppModule] }),

@@ -1,3 +1,4 @@
+import { SkipThrottle } from '@nestjs/throttler';
 import {
   Controller,
   ForbiddenException,
@@ -18,6 +19,8 @@ import { verifyMetaSignature } from './meta-webhook.util';
 
 // Adaptado de huarique_backend WhatsappController. Meta llama aquí por la redirección configurada al conectar.
 @Public()
+// Meta reintenta y manda ráfagas: el webhook no pasa por el límite de peticiones (lo protege la firma).
+@SkipThrottle()
 @Controller('webhooks/whatsapp')
 export class WebhookController {
   constructor(private readonly entrantes: EntrantesService) {}

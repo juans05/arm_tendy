@@ -9,10 +9,14 @@ import { ValueTransformer } from 'typeorm';
 
 const ALGORITHM = 'aes-256-gcm';
 
+// scrypt es lento a propósito: la clave se deriva una vez por secreto, no en cada lectura.
+const claves = new Map<string, Buffer>();
 function clave(): Buffer {
   const secreto = process.env.FIELD_ENCRYPTION_KEY;
   if (!secreto) throw new Error('FIELD_ENCRYPTION_KEY es obligatoria');
-  return scryptSync(secreto, 'salt', 32);
+  let k = claves.get(secreto);
+  if (!k) claves.set(secreto, (k = scryptSync(secreto, 'salt', 32)));
+  return k;
 }
 
 export const cifrado: ValueTransformer = {

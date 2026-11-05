@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { SuiteAuthGuard } from './auth/suite-auth.guard';
@@ -24,6 +25,10 @@ import { RolesGuard } from './miembros/roles.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // ponytail: contador en memoria por instancia; usar almacenamiento en Redis si hay varias instancias.
+    ThrottlerModule.forRoot([
+      { ttl: 60_000, limit: Number(process.env.LIMITE_POR_MINUTO ?? 300) },
+    ]),
     TypeOrmModule.forRootAsync({ useClass: DatabaseConfig }),
     AuthModule,
     MiembrosModule,
@@ -40,8 +45,9 @@ import { RolesGuard } from './miembros/roles.guard';
     ReportesModule,
   ],
   controllers: [HealthController],
-  // El orden importa: primero el token, luego el miembro, luego el rol.
+  // El orden importa: primero el límite de peticiones, luego el token, luego el miembro, luego el rol.
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: SuiteAuthGuard },
     { provide: APP_GUARD, useClass: MiembroActivoGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
