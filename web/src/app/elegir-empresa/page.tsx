@@ -50,7 +50,19 @@ export default function ElegirEmpresa() {
         ))}
       </ul>
       {error && <p className="text-sm text-peligro">{error}</p>}
-      <button className="text-sm underline" onClick={() => { borrarToken(); router.replace('/login'); }}>Salir</button>
+      {/* La sesión guarda qué apps tiene la empresa: si ARM se activó después de entrar, hay que renovarla. */}
+      <div className="rounded-2xl bg-mango-suave p-4 text-sm">
+        <p>¿Tu empresa acaba de contratar ARM? Vuelve a entrar para actualizar tu sesión.</p>
+        <button
+          className="mt-2 rounded-xl bg-tinta px-4 py-2 font-semibold text-white"
+          onClick={() => {
+            borrarToken();
+            router.replace('/login');
+          }}
+        >
+          Volver a entrar
+        </button>
+      </div>
     </main>
   );
 }

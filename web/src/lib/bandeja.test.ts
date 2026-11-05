@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aplicarEvento, ConversacionResumen, EventoBandeja, fueraDeVentana, textoDeMensaje } from './bandeja';
+import { aplicarEvento, ConversacionResumen, EventoMensaje, fueraDeVentana, textoDeMensaje } from './bandeja';
 
 const conv = (id: string, extra: Partial<ConversacionResumen> = {}): ConversacionResumen => ({
   id,
@@ -12,7 +12,7 @@ const conv = (id: string, extra: Partial<ConversacionResumen> = {}): Conversacio
   ...extra,
 });
 
-const evento = (conversacionId: string, extra: Partial<EventoBandeja['mensaje']> = {}): EventoBandeja => ({
+const evento = (conversacionId: string, extra: Partial<EventoMensaje['mensaje']> = {}): EventoMensaje => ({
   tipo: 'mensaje',
   conversacionId,
   mensaje: {
@@ -48,6 +48,32 @@ describe('aplicarEvento', () => {
     const r = aplicarEvento([conv('a')], evento('z'), null);
     expect(r.map((c) => c.id)).toEqual(['z', 'a']);
     expect(r[0]).toMatchObject({ noLeidos: 1, ultimoTexto: 'nuevo', modo: 'ia' });
+  });
+
+  it('mensaje de la IA no pasa la conversación a humano', () => {
+    const r = aplicarEvento([conv('a')], evento('a', { direccion: 'saliente', origen: 'ia' }), null);
+    expect(r[0].modo).toBe('ia');
+  });
+
+  it('el mismo mensaje actualizado (transcripción) no suma no leídos otra vez', () => {
+    const una = aplicarEvento([conv('a')], evento('a'), null);
+    const dos = aplicarEvento(una, evento('a', { texto: 'transcripción' }), null);
+    expect(dos[0]).toMatchObject({ noLeidos: 1, ultimoTexto: 'transcripción' });
+  });
+
+  it('cambio de modo y borrador se aplican sin reordenar', () => {
+    const r = aplicarEvento(
+      [conv('a'), conv('b')],
+      { tipo: 'conversacion', conversacionId: 'b', modo: 'humano', borrador: 'Hola!' },
+      null,
+    );
+    expect(r.map((c) => c.id)).toEqual(['a', 'b']);
+    expect(r[1]).toMatchObject({ modo: 'humano', borrador: 'Hola!' });
+  });
+
+  it('eventos de lead o pregunta no cambian la lista', () => {
+    const lista = [conv('a')];
+    expect(aplicarEvento(lista, { tipo: 'pregunta', pregunta: { id: 'p', pregunta: '?' } }, null)).toBe(lista);
   });
 
   it('no muta la lista original', () => {

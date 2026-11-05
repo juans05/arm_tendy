@@ -48,3 +48,27 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<Resp
 }
 
 export const me = () => api<{ miembro: Miembro; empresa: string }>('/me');
+
+// Subir archivos (multipart): no se fija Content-Type para que el navegador ponga el boundary.
+export async function subir<T>(path: string, form: FormData): Promise<Respuesta<T>> {
+  const token = leerToken();
+  const res = await fetch(`${API}${path}`, {
+    method: 'POST',
+    body: form,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  }).catch(() => null);
+  if (!res) return { status: 0, message: 'No se pudo conectar con ARM' };
+  const body = await res.json().catch(() => undefined);
+  if (res.status === 401) borrarToken();
+  if (res.ok) return { status: res.status, data: body as T };
+  const message = Array.isArray(body?.message) ? body.message.join('. ') : body?.message;
+  return { status: res.status, code: body?.code, message };
+}
+
+// Archivo protegido (imagen o audio) como URL local: <img> no puede mandar el token en la cabecera.
+export async function urlDeArchivo(path: string): Promise<string | null> {
+  const token = leerToken();
+  const res = await fetch(`${API}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} }).catch(() => null);
+  if (!res?.ok) return null;
+  return URL.createObjectURL(await res.blob());
+}
