@@ -287,8 +287,7 @@ export class ReportesService {
             r.demosRealizadas ||
             r.ganados ||
             r.sinAtender,
-        )
-        .map(({ rol: _, ...r }) => r),
+        ),
       ia: {
         primeraRespuestaSeg: horas(i.primera_respuesta),
         calificadosSinHumano: tasa(
