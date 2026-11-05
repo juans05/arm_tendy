@@ -4,13 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  DataSource,
-  EntityManager,
-  FindOptionsWhere,
-  In,
-  IsNull,
-} from 'typeorm';
+import { DataSource, EntityManager, FindOptionsWhere, IsNull } from 'typeorm';
 import { AlertasService } from '../alertas/alertas.service';
 import { Contacto } from '../bandeja/contacto.entity';
 import { Conversacion } from '../bandeja/conversacion.entity';
@@ -195,8 +189,12 @@ export class LeadsService {
     );
   }
 
-  /** El comercial de la línea (o que recibe demos) con menos leads abiertos. */
   async elegirComercial(lead: Lead): Promise<string | null> {
+    return (await this.candidatos(lead))[0] ?? null;
+  }
+
+  /** Comerciales de la línea (o los que reciben demos), del que tiene menos leads abiertos al que más. */
+  async candidatos(lead: Lead): Promise<string[]> {
     let candidatos: string[] = [];
     if (lead.lineaId) {
       const linea = await this.db.getRepository(LineaProducto).findOne({
@@ -215,7 +213,7 @@ export class LeadsService {
           recibeDemos: true,
         })
       ).map((m) => m.id);
-    if (!candidatos.length) return null;
+    if (!candidatos.length) return [];
     const carga: { dueno_id: string; n: string }[] = await this.db.query(
       `SELECT dueno_id, count(*) AS n FROM leads
         WHERE dueno_id = ANY($1) AND etapa <> ALL($2) GROUP BY dueno_id`,
@@ -223,17 +221,12 @@ export class LeadsService {
     );
     const n = (id: string) =>
       Number(carga.find((c) => c.dueno_id === id)?.n ?? 0);
-    return candidatos.reduce((a, b) => (n(b) < n(a) ? b : a));
+    return candidatos.sort((a, b) => n(a) - n(b));
   }
 
   async emitir(id: string, conversacionId: string, tenant: string) {
     const lead = await this.db.getRepository(Lead).findOneByOrFail({ id });
     this.eventos.emitir(tenant, { tipo: 'lead', conversacionId, lead });
     return lead;
-  }
-
-  /** Para el calendario y otros módulos: ids de miembros por id, de la misma empresa. */
-  miembros(tenant: string, ids: string[]) {
-    return this.db.getRepository(Miembro).findBy({ tenant, id: In(ids) });
   }
 }

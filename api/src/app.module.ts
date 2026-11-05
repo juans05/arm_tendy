@@ -8,6 +8,7 @@ import { DatabaseConfig } from './config/database.config';
 import { HealthController } from './health/health.controller';
 import { AgenteModule } from './agente/agente.module';
 import { AlertasModule } from './alertas/alertas.module';
+import { CalendarioModule } from './calendario/calendario.module';
 import { LeadsModule } from './leads/leads.module';
 import { BandejaModule } from './bandeja/bandeja.module';
 import { CanalesModule } from './canales/canales.module';
@@ -32,6 +33,7 @@ import { RolesGuard } from './miembros/roles.guard';
     AgenteModule,
     AlertasModule,
     LeadsModule,
+    CalendarioModule,
   ],
   controllers: [HealthController],
   // El orden importa: primero el token, luego el miembro, luego el rol.

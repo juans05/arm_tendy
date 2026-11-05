@@ -128,6 +128,25 @@ describe('AgenteService', () => {
     ]);
   });
 
+  it('al agendar la demo confirma, no retrocede el lead y pasa a humano', async () => {
+    const conv = await llega();
+    respuestaIa = async () =>
+      decision({ horario_elegido: 'lunes 9 de noviembre a las 09:00' });
+    agente.ganchos.alElegirHorario = async (_c, l) => {
+      await db.getRepository(Lead).update(l.id, { etapa: 'demo_agendada' });
+      return { respuesta: '¡Listo! Agendada.', agendada: true };
+    };
+    await agente.atender(conv.id);
+    expect(enviados).toEqual(['¡Listo! Agendada.']);
+    expect((await db.getRepository(Lead).findOneByOrFail({})).etapa).toBe(
+      'demo_agendada',
+    );
+    expect(
+      (await db.getRepository(Conversacion).findOneByOrFail({ id: conv.id }))
+        .modo,
+    ).toBe('humano');
+  });
+
   it('modo propone: no envía y deja borrador', async () => {
     await db
       .getRepository(EmpresaConfig)

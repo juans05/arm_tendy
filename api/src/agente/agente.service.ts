@@ -27,7 +27,7 @@ export interface Ganchos {
     conv: Conversacion,
     lead: Lead,
     horario: string,
-  ) => Promise<string | null>;
+  ) => Promise<{ respuesta: string; agendada: boolean } | null>;
   /** Bloque 6: el cliente pidió no ser contactado. */
   alPedirBaja?: (conv: Conversacion) => Promise<void>;
 }
@@ -113,18 +113,25 @@ export class AgenteService {
     const d = leerDecision(r.texto);
 
     let respuesta = d.respuesta;
+    let agendada = false;
     if (d.horarioElegido && this.ganchos.alElegirHorario) {
-      const confirmacion = await this.ganchos.alElegirHorario(
+      const r = await this.ganchos.alElegirHorario(
         conv,
         lead,
         d.horarioElegido,
       );
-      if (confirmacion) respuesta = confirmacion;
+      if (r) ({ respuesta, agendada } = r);
     }
-    await this.aplicar(conv, lead, lineas, d);
+    // Si se agendó, el lead ya está en demo_agendada: se relee para no pisar la etapa.
+    const actual = agendada
+      ? await this.db.getRepository(Lead).findOneByOrFail({ id: lead.id })
+      : lead;
+    await this.aplicar(conv, actual, lineas, d);
     if (d.baja) await this.ganchos.alPedirBaja?.(conv);
     if (respuesta) await this.responder(conv, empresa, respuesta);
-    if (d.traspaso) await this.pasarAHumano(conv, d.traspaso);
+    // Con la demo agendada el lead pasa al comercial.
+    if (d.traspaso || agendada)
+      await this.pasarAHumano(conv, d.traspaso ?? 'demo');
 
     return this.db.getRepository(Mensaje).exists({
       where: {
