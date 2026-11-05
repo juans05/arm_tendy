@@ -1,7 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, ServiceUnavailableException, UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { jwtVerify, JWTVerifyGetKey } from 'jose';
+import { errors, jwtVerify, JWTVerifyGetKey } from 'jose';
 import { JWKS_KEY_SET } from './jwks.provider';
 import { IS_PUBLIC } from './public.decorator';
 import { parseApps, SuiteUser, TENANT_CLAIM } from './suite-user';
@@ -28,8 +30,14 @@ export class SuiteAuthGuard implements CanActivate {
         algorithms: ['RS256'],
         issuer: this.config.getOrThrow<string>('CUENTAS_ISSUER'),
         audience: this.config.getOrThrow<string>('CUENTAS_AUDIENCE'),
+        // PuntoVenta emite nbf = ahora: un reloj algo atrasado aquí no debe rechazar un token recién emitido.
+        clockTolerance: 60,
       }));
-    } catch {
+    } catch (e) {
+      // Si no se pudo traer la clave pública de Cuentas, el token no es culpable: 503, no 401 (que borra la sesión).
+      if (e instanceof errors.JWKSTimeout || !(e instanceof errors.JOSEError)) {
+        throw new ServiceUnavailableException({ code: 'CUENTAS_NO_DISPONIBLE', message: 'No se pudo validar la sesión con Cuentas' });
+      }
       throw new UnauthorizedException('Token inválido o vencido');
     }
 

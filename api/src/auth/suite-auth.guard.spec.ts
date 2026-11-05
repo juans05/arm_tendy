@@ -1,7 +1,7 @@
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { createLocalJWKSet, exportJWK, generateKeyPair, JWTVerifyGetKey, KeyLike, SignJWT } from 'jose';
+import { createLocalJWKSet, errors, exportJWK, generateKeyPair, JWTVerifyGetKey, KeyLike, SignJWT } from 'jose';
 import { SuiteAuthGuard } from './suite-auth.guard';
 import { IS_PUBLIC } from './public.decorator';
 
@@ -106,6 +106,22 @@ describe('SuiteAuthGuard', () => {
     const claims: Record<string, unknown> = { ...claimsBase };
     delete claims[TENANT_CLAIM];
     expect((await codigo(guard().canActivate(contexto(await firmar(claims)).ctx))).tipo).toBe(UnauthorizedException);
+  });
+
+  it('tolera desfase de reloj de 30 s (nbf en el futuro)', async () => {
+    const t = await new SignJWT(claimsBase).setProtectedHeader({ alg: 'RS256', kid: 'k1' }).setIssuer(ISS).setAudience(AUD)
+      .setNotBefore(Math.floor(Date.now() / 1000) + 30).setExpirationTime('1h').sign(privada);
+    expect(await guard().canActivate(contexto(t).ctx)).toBe(true);
+  });
+
+  it.each([
+    ['JWKS sin respuesta', new errors.JWKSTimeout()],
+    ['fetch fallido', new TypeError('fetch failed')],
+  ])('%s → 503', async (_, error) => {
+    const caido = (() => Promise.reject(error)) as unknown as JWTVerifyGetKey;
+    const reflector = { getAllAndOverride: () => false } as unknown as Reflector;
+    const g = new SuiteAuthGuard(reflector, caido, new ConfigService({ CUENTAS_ISSUER: ISS, CUENTAS_AUDIENCE: AUD }));
+    expect((await codigo(g.canActivate(contexto(await firmar(claimsBase)).ctx))).tipo).toBe(ServiceUnavailableException);
   });
 
   it('@Public pasa sin token', async () => {

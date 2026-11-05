@@ -21,7 +21,9 @@ export class MiembrosService {
     const existente = await this.repo.findOneBy({ tenant: user.tenant, userId: user.userId });
     if (existente) {
       if (existente.nombre === user.nombre && existente.username === user.username) return existente;
-      return this.repo.save({ ...existente, nombre: user.nombre, username: user.username });
+      // update parcial: un save con la copia leída podría revertir un rol/estado cambiado entre la lectura y la escritura.
+      await this.repo.update({ id: existente.id }, { nombre: user.nombre, username: user.username });
+      return this.repo.findOneByOrFail({ id: existente.id });
     }
 
     return this.db.transaction(async (m) => {

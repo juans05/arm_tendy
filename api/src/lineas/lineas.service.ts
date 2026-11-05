@@ -30,10 +30,11 @@ export class LineasService {
     return this.guardar(linea);
   }
 
-  // Quiénes hacen las demos de la línea: los asignados o, si no hay, todos los activos que reciben demos.
+  // Quiénes hacen las demos de la línea: los asignados que siguen activos o, si no queda ninguno, todos los activos que reciben demos.
   async comercialesDeLinea(tenant: string, lineaId: string): Promise<Miembro[]> {
     const linea = await this.obtener(tenant, lineaId);
-    if (linea.comerciales.length) return linea.comerciales;
+    const asignadosActivos = linea.comerciales.filter((m) => m.estado === 'activo');
+    if (asignadosActivos.length) return asignadosActivos;
     return this.miembros.find({ where: { tenant, estado: 'activo', recibeDemos: true }, order: { createdAt: 'ASC' } });
   }
 
@@ -46,8 +47,8 @@ export class LineasService {
   private async comercialesValidos(tenant: string, ids: string[]): Promise<Miembro[]> {
     const unicos = [...new Set(ids)];
     if (!unicos.length) return [];
-    const encontrados = await this.miembros.findBy({ tenant, id: In(unicos) });
-    if (encontrados.length !== unicos.length) throw new BadRequestException('Algún comercial no pertenece a la empresa');
+    const encontrados = await this.miembros.findBy({ tenant, estado: 'activo', id: In(unicos) });
+    if (encontrados.length !== unicos.length) throw new BadRequestException('Algún comercial no pertenece a la empresa o no está activo');
     return encontrados;
   }
 

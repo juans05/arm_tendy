@@ -58,6 +58,22 @@ describe('MiembrosService', () => {
     expect(await svc.actualizar('wuarikes', g.id, { rol: 'comercial' })).toMatchObject({ rol: 'comercial' });
   });
 
+  it('entrar con una lectura vieja no revierte una desactivación', async () => {
+    await svc.entrar(usuario('u1'));
+    const ana = await svc.entrar(usuario('u2', 'wuarikes', 'Ana'));
+    await svc.actualizar('wuarikes', ana.id, { estado: 'activo' });
+    const vieja = await db.getRepository(Miembro).findOneByOrFail({ id: ana.id });
+    await svc.actualizar('wuarikes', ana.id, { estado: 'inactivo' });
+
+    // Simula la carrera: entrar leyó antes de la desactivación y además trae un nombre nuevo.
+    const repo = (svc as any).repo;
+    jest.spyOn(repo, 'findOneBy').mockResolvedValueOnce(vieja);
+    await svc.entrar(usuario('u2', 'wuarikes', 'Ana María'));
+
+    const final = await db.getRepository(Miembro).findOneByOrFail({ id: ana.id });
+    expect(final).toMatchObject({ estado: 'inactivo', nombre: 'Ana María' });
+  });
+
   it('aislamiento entre empresas', async () => {
     const a = await svc.entrar(usuario('u1', 'wuarikes'));
     await svc.entrar(usuario('u9', 'tendy'));

@@ -54,6 +54,7 @@ describe('LineasService', () => {
   it('asigna y devuelve comerciales de la línea', async () => {
     await miembros.entrar(usuario('u1'));
     const ana = await miembros.entrar(usuario('u2'));
+    await miembros.actualizar('wuarikes', ana.id, { estado: 'activo' });
     const l = await svc.crear('wuarikes', { nombre: 'Spa', comercialIds: [ana.id] });
     expect((await svc.comercialesDeLinea('wuarikes', l.id)).map((m) => m.id)).toEqual([ana.id]);
   });
@@ -65,6 +66,22 @@ describe('LineasService', () => {
     await miembros.actualizar('wuarikes', pendiente.id, { recibeDemos: true }); // sigue pendiente
     const l = await svc.crear('wuarikes', { nombre: 'Restaurante' });
     expect((await svc.comercialesDeLinea('wuarikes', l.id)).map((m) => m.id)).toEqual([g.id]);
+  });
+
+  it('asignado que se desactiva deja de hacer demos y se cae al conjunto por defecto', async () => {
+    const g = await miembros.entrar(usuario('u1'));
+    await miembros.actualizar('wuarikes', g.id, { recibeDemos: true });
+    const ana = await miembros.entrar(usuario('u2'));
+    await miembros.actualizar('wuarikes', ana.id, { estado: 'activo' });
+    const l = await svc.crear('wuarikes', { nombre: 'Spa', comercialIds: [ana.id] });
+    await miembros.actualizar('wuarikes', ana.id, { estado: 'inactivo' });
+    expect((await svc.comercialesDeLinea('wuarikes', l.id)).map((m) => m.id)).toEqual([g.id]);
+  });
+
+  it('comercialIds de un miembro no activo → 400', async () => {
+    await miembros.entrar(usuario('u1'));
+    const pendiente = await miembros.entrar(usuario('u2'));
+    await expect(svc.crear('wuarikes', { nombre: 'Spa', comercialIds: [pendiente.id] })).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('aislamiento entre empresas', async () => {

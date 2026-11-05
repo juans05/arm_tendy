@@ -32,7 +32,7 @@ export default function Lineas() {
   }
 
   const editar = (l: Linea) =>
-    setForm({ id: l.id, nombre: l.nombre, criterios: l.criterios, duracionDemoMin: l.duracionDemoMin, activa: l.activa, comercialIds: l.comerciales.map((c) => c.id) });
+    setForm({ id: l.id, nombre: l.nombre, criterios: l.criterios, duracionDemoMin: l.duracionDemoMin, activa: l.activa, comercialIds: l.comerciales.filter((c) => c.estado === 'activo').map((c) => c.id) });
 
   return (
     <section className="space-y-4">

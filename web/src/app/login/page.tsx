@@ -2,7 +2,8 @@
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { login } from '@/lib/cuentas';
-import { guardarToken } from '@/lib/sesion';
+import { me } from '@/lib/api';
+import { borrarToken, destinoTrasMe, errorTrasLogin, guardarToken } from '@/lib/sesion';
 
 export default function Login() {
   const router = useRouter();
@@ -17,7 +18,13 @@ export default function Login() {
     setEnviando(true);
     try {
       guardarToken(await login(usuario, clave));
-      router.replace('/');
+      const r = await me();
+      const problema = errorTrasLogin(r.status);
+      if (problema) {
+        borrarToken();
+        return setError(problema);
+      }
+      router.replace(destinoTrasMe({ status: r.status, code: r.code, rol: r.data?.miembro.rol, estado: r.data?.miembro.estado }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión');
     } finally {

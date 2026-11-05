@@ -62,6 +62,21 @@ describe('Miembros (e2e)', () => {
     expect(r.status).toBe(404);
   });
 
+  it.each([[{ rol: null }], [{ estado: null }], [{ recibeDemos: null }]])('campo en null %p → 400', async (cuerpo) => {
+    const g = await f.token({ userId: 'u1', tenant: 'wuarikes' });
+    const me = await http().get('/me').set('Authorization', `Bearer ${g}`);
+    const r = await http().patch(`/miembros/${me.body.miembro.id}`).set('Authorization', `Bearer ${g}`).send(cuerpo);
+    expect(r.status).toBe(400);
+  });
+
+  it.each([[{ nombre: null }], [{ activa: null }], [{ duracionDemoMin: null }], [{ criterios: null }]])('línea con campo en null %p → 400', async (cuerpo) => {
+    const g = await f.token({ userId: 'u1', tenant: 'wuarikes' });
+    const linea = await http().post('/lineas').set('Authorization', `Bearer ${g}`).send({ nombre: `L-${Math.random()}` });
+    expect(linea.status).toBe(201);
+    const r = await http().patch(`/lineas/${linea.body.id}`).set('Authorization', `Bearer ${g}`).send(cuerpo);
+    expect(r.status).toBe(400);
+  });
+
   it('celular inválido → 400', async () => {
     const g = await f.token({ userId: 'u1', tenant: 'wuarikes' });
     const me = await http().get('/me').set('Authorization', `Bearer ${g}`);
