@@ -1,5 +1,10 @@
 // Copiado de huarique_backend/src/common/utils/encryption-transformer.ts (mismo formato iv:authTag:cifrado).
-import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  scryptSync,
+} from 'crypto';
 import { ValueTransformer } from 'typeorm';
 
 const ALGORITHM = 'aes-256-gcm';

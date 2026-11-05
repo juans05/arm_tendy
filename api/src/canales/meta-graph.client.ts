@@ -6,14 +6,25 @@ export class MetaError extends BadGatewayException {
   }
 }
 
-type Opciones = { token?: string; body?: unknown; query?: Record<string, string> };
+type Opciones = {
+  token?: string;
+  body?: unknown;
+  query?: Record<string, string>;
+};
 
 // Cliente mínimo de la Graph API de Meta.
 @Injectable()
 export class MetaGraph {
-  async llamar<T>(metodo: 'GET' | 'POST', ruta: string, opts: Opciones = {}): Promise<T> {
-    const url = new URL(`https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION ?? 'v20.0'}${ruta}`);
-    for (const [k, v] of Object.entries(opts.query ?? {})) url.searchParams.set(k, v);
+  async llamar<T>(
+    metodo: 'GET' | 'POST',
+    ruta: string,
+    opts: Opciones = {},
+  ): Promise<T> {
+    const url = new URL(
+      `https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION ?? 'v20.0'}${ruta}`,
+    );
+    for (const [k, v] of Object.entries(opts.query ?? {}))
+      url.searchParams.set(k, v);
     const res = await fetch(url, {
       method: metodo,
       headers: {
@@ -26,7 +37,8 @@ export class MetaGraph {
       throw new MetaError(e.message);
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.error) throw new MetaError(data?.error?.message ?? `HTTP ${res.status}`);
+    if (!res.ok || data?.error)
+      throw new MetaError(data?.error?.message ?? `HTTP ${res.status}`);
     return data as T;
   }
 }

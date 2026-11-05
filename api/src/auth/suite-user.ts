@@ -6,13 +6,20 @@ export interface SuiteUser {
   apps: string[];
 }
 
-export const TENANT_CLAIM = 'https://schemas.microsoft.com/identity/claims/tenantid';
+export const TENANT_CLAIM =
+  'https://schemas.microsoft.com/identity/claims/tenantid';
 
 // PuntoVenta manda `apps` como string con un arreglo JSON: "[\"arp\",\"arm\"]".
 export function parseApps(raw: unknown): string[] {
   let valor = raw;
   if (typeof raw === 'string') {
-    try { valor = JSON.parse(raw); } catch { return []; }
+    try {
+      valor = JSON.parse(raw);
+    } catch {
+      return [];
+    }
   }
-  return Array.isArray(valor) ? valor.filter((x): x is string => typeof x === 'string') : [];
+  return Array.isArray(valor)
+    ? valor.filter((x): x is string => typeof x === 'string')
+    : [];
 }

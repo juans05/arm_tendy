@@ -9,5 +9,10 @@ export const jwksProvider: Provider = {
   provide: JWKS_KEY_SET,
   inject: [ConfigService],
   useFactory: (config: ConfigService) =>
-    createRemoteJWKSet(new URL('/.well-known/jwks.json', config.getOrThrow<string>('CUENTAS_URL'))),
+    createRemoteJWKSet(
+      new URL(
+        '/.well-known/jwks.json',
+        config.getOrThrow<string>('CUENTAS_URL'),
+      ),
+    ),
 };

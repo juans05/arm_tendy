@@ -4,8 +4,12 @@ import { crearApp } from './util/app';
 
 describe('GET /health', () => {
   let app: INestApplication;
-  beforeAll(async () => { app = await crearApp(); });
-  afterAll(async () => { await app.close(); });
+  beforeAll(async () => {
+    app = await crearApp();
+  });
+  afterAll(async () => {
+    await app.close();
+  });
 
   it('responde ok con la base conectada', async () => {
     const res = await request(app.getHttpServer()).get('/health');

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { Miembro } from '../miembros/miembro.entity';
 import { MiembroActual, Roles } from '../miembros/miembros.decorators';
 import { ActualizarLineaDto, GuardarLineaDto } from './dto/guardar-linea.dto';
@@ -21,7 +29,11 @@ export class LineasController {
 
   @Patch(':id')
   @Roles('gerente')
-  actualizar(@MiembroActual() yo: Miembro, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ActualizarLineaDto) {
+  actualizar(
+    @MiembroActual() yo: Miembro,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ActualizarLineaDto,
+  ) {
     return this.lineas.actualizar(yo.tenant, id, dto);
   }
 }

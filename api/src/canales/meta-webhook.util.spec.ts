@@ -10,7 +10,9 @@ const envolver = (msg: object, extra: object = {}) => ({
           value: {
             metadata: { phone_number_id: 'ph1' },
             contacts: [{ wa_id: '51911', profile: { name: 'Rosa' } }],
-            messages: [{ id: 'wamid.1', from: '51911', timestamp: '1762300000', ...msg }],
+            messages: [
+              { id: 'wamid.1', from: '51911', timestamp: '1762300000', ...msg },
+            ],
             ...extra,
           },
         },
@@ -21,7 +23,9 @@ const envolver = (msg: object, extra: object = {}) => ({
 
 describe('parseMetaWebhook', () => {
   it('texto', () => {
-    expect(parseMetaWebhook(envolver({ type: 'text', text: { body: 'Hola' } }))).toEqual([
+    expect(
+      parseMetaWebhook(envolver({ type: 'text', text: { body: 'Hola' } })),
+    ).toEqual([
       {
         phoneNumberId: 'ph1',
         from: '51911',
@@ -38,32 +42,88 @@ describe('parseMetaWebhook', () => {
   });
 
   it('botón', () => {
-    expect(parseMetaWebhook(envolver({ type: 'button', button: { text: 'Quiero info' } }))[0].texto).toBe('Quiero info');
+    expect(
+      parseMetaWebhook(
+        envolver({ type: 'button', button: { text: 'Quiero info' } }),
+      )[0].texto,
+    ).toBe('Quiero info');
   });
 
   it('respuesta interactiva', () => {
-    const [m] = parseMetaWebhook(envolver({ type: 'interactive', interactive: { list_reply: { title: 'Spa' } } }));
+    const [m] = parseMetaWebhook(
+      envolver({
+        type: 'interactive',
+        interactive: { list_reply: { title: 'Spa' } },
+      }),
+    );
     expect(m.texto).toBe('Spa');
   });
 
   it('imagen con caption', () => {
-    const [m] = parseMetaWebhook(envolver({ type: 'image', image: { id: 'media9', mime_type: 'image/jpeg', caption: 'mi local' } }));
-    expect(m).toMatchObject({ tipo: 'image', texto: 'mi local', mediaId: 'media9', mimeType: 'image/jpeg' });
+    const [m] = parseMetaWebhook(
+      envolver({
+        type: 'image',
+        image: { id: 'media9', mime_type: 'image/jpeg', caption: 'mi local' },
+      }),
+    );
+    expect(m).toMatchObject({
+      tipo: 'image',
+      texto: 'mi local',
+      mediaId: 'media9',
+      mimeType: 'image/jpeg',
+    });
   });
 
   it('audio sin texto', () => {
-    const [m] = parseMetaWebhook(envolver({ type: 'audio', audio: { id: 'media7', mime_type: 'audio/ogg' } }));
-    expect(m).toMatchObject({ tipo: 'audio', texto: null, mediaId: 'media7', mimeType: 'audio/ogg' });
+    const [m] = parseMetaWebhook(
+      envolver({
+        type: 'audio',
+        audio: { id: 'media7', mime_type: 'audio/ogg' },
+      }),
+    );
+    expect(m).toMatchObject({
+      tipo: 'audio',
+      texto: null,
+      mediaId: 'media7',
+      mimeType: 'audio/ogg',
+    });
   });
 
   it('referral de anuncio', () => {
-    const referral = { source_id: 'ad1', source_type: 'ad', source_url: 'https://fb.me/x', headline: 'Software para barberías', body: 'b' };
-    const [m] = parseMetaWebhook(envolver({ type: 'text', text: { body: 'Hola' }, referral }));
-    expect(m.referral).toEqual({ sourceId: 'ad1', sourceType: 'ad', sourceUrl: 'https://fb.me/x', headline: 'Software para barberías' });
+    const referral = {
+      source_id: 'ad1',
+      source_type: 'ad',
+      source_url: 'https://fb.me/x',
+      headline: 'Software para barberías',
+      body: 'b',
+    };
+    const [m] = parseMetaWebhook(
+      envolver({ type: 'text', text: { body: 'Hola' }, referral }),
+    );
+    expect(m.referral).toEqual({
+      sourceId: 'ad1',
+      sourceType: 'ad',
+      sourceUrl: 'https://fb.me/x',
+      headline: 'Software para barberías',
+    });
   });
 
   it('estados de entrega → []', () => {
-    const payload = { entry: [{ changes: [{ field: 'messages', value: { metadata: { phone_number_id: 'ph1' }, statuses: [{ id: 'wamid.1', status: 'read' }] } }] }] };
+    const payload = {
+      entry: [
+        {
+          changes: [
+            {
+              field: 'messages',
+              value: {
+                metadata: { phone_number_id: 'ph1' },
+                statuses: [{ id: 'wamid.1', status: 'read' }],
+              },
+            },
+          ],
+        },
+      ],
+    };
     expect(parseMetaWebhook(payload)).toEqual([]);
   });
 
@@ -81,12 +141,29 @@ describe('parseMessageEchoes', () => {
           changes: [
             {
               field: 'smb_message_echoes',
-              value: { metadata: { phone_number_id: 'ph1' }, message_echoes: [{ id: 'wamid.e1', to: '51911', type: 'text', text: { body: 'Te llamo' } }] },
+              value: {
+                metadata: { phone_number_id: 'ph1' },
+                message_echoes: [
+                  {
+                    id: 'wamid.e1',
+                    to: '51911',
+                    type: 'text',
+                    text: { body: 'Te llamo' },
+                  },
+                ],
+              },
             },
           ],
         },
       ],
     };
-    expect(parseMessageEchoes(payload)).toEqual([{ phoneNumberId: 'ph1', to: '51911', messageId: 'wamid.e1', body: 'Te llamo' }]);
+    expect(parseMessageEchoes(payload)).toEqual([
+      {
+        phoneNumberId: 'ph1',
+        to: '51911',
+        messageId: 'wamid.e1',
+        body: 'Te llamo',
+      },
+    ]);
   });
 });

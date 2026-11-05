@@ -1,11 +1,24 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource, EntityManager } from 'typeorm';
-import { parseMessageEchoes, parseMetaWebhook } from '../canales/meta-webhook.util';
+import {
+  parseMessageEchoes,
+  parseMetaWebhook,
+} from '../canales/meta-webhook.util';
 import { NumeroWhatsapp } from '../canales/numero-whatsapp.entity';
 import { EventosService } from './eventos.service';
 import { Mensaje } from './mensaje.entity';
 
-type Nuevo = Pick<Mensaje, 'direccion' | 'origen' | 'tipo' | 'texto' | 'mediaId' | 'mimeType' | 'waMessageId' | 'referral'>;
+type Nuevo = Pick<
+  Mensaje,
+  | 'direccion'
+  | 'origen'
+  | 'tipo'
+  | 'texto'
+  | 'mediaId'
+  | 'mimeType'
+  | 'waMessageId'
+  | 'referral'
+>;
 
 // Registra en la bandeja lo que llega por el webhook de WhatsApp.
 @Injectable()
@@ -45,15 +58,33 @@ export class EntrantesService {
     }
   }
 
-  private async guardar(phoneNumberId: string, telefono: string, nombre: string | null, en: Date, nuevo: Nuevo) {
+  private async guardar(
+    phoneNumberId: string,
+    telefono: string,
+    nombre: string | null,
+    en: Date,
+    nuevo: Nuevo,
+  ) {
     const r = await this.db.transaction(async (em) => {
-      const numero = await em.findOneBy(NumeroWhatsapp, { phoneNumberId, activo: true });
+      const numero = await em.findOneBy(NumeroWhatsapp, {
+        phoneNumberId,
+        activo: true,
+      });
       if (!numero) {
-        this.log.warn(`Mensaje para un número no conectado (${phoneNumberId}); se ignora`);
+        this.log.warn(
+          `Mensaje para un número no conectado (${phoneNumberId}); se ignora`,
+        );
         return null;
       }
       const tenant = numero.tenant;
-      const conversacionId = await this.conversacion(em, tenant, numero.id, telefono, nombre, en);
+      const conversacionId = await this.conversacion(
+        em,
+        tenant,
+        numero.id,
+        telefono,
+        nombre,
+        en,
+      );
 
       // ON CONFLICT DO NOTHING: si Meta reenvía el mismo mensaje no se guarda ni se notifica otra vez.
       const ins = await em
@@ -76,13 +107,29 @@ export class EntrantesService {
          WHERE id = $1`,
         [conversacionId, en, entrante],
       );
-      return { tenant, conversacionId, mensaje: await em.findOneByOrFail(Mensaje, { id }) };
+      return {
+        tenant,
+        conversacionId,
+        mensaje: await em.findOneByOrFail(Mensaje, { id }),
+      };
     });
-    if (r) this.eventos.emitir(r.tenant, { tipo: 'mensaje', conversacionId: r.conversacionId, mensaje: r.mensaje });
+    if (r)
+      this.eventos.emitir(r.tenant, {
+        tipo: 'mensaje',
+        conversacionId: r.conversacionId,
+        mensaje: r.mensaje,
+      });
   }
 
   // Upsert de contacto y conversación (seguro ante webhooks simultáneos del mismo cliente).
-  private async conversacion(em: EntityManager, tenant: string, numeroId: string, telefono: string, nombre: string | null, en: Date) {
+  private async conversacion(
+    em: EntityManager,
+    tenant: string,
+    numeroId: string,
+    telefono: string,
+    nombre: string | null,
+    en: Date,
+  ) {
     const [c] = await em.query(
       `INSERT INTO contactos (tenant, telefono, nombre) VALUES ($1, $2, COALESCE($3::varchar, $2))
        ON CONFLICT (tenant, telefono) DO UPDATE SET nombre = COALESCE($3::varchar, contactos.nombre)

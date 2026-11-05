@@ -1,4 +1,14 @@
-import { IsArray, IsBoolean, IsInt, IsString, IsUUID, Length, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsString,
+  IsUUID,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Opcional } from '../../common/opcional.decorator';
 
 export class GuardarLineaDto {

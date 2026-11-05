@@ -9,7 +9,9 @@ export async function crearApp(
 ): Promise<INestApplication> {
   process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
   const { AppModule } = await import('../../src/app.module');
-  const modulo = await overrides(Test.createTestingModule({ imports: [AppModule] })).compile();
+  const modulo = await overrides(
+    Test.createTestingModule({ imports: [AppModule] }),
+  ).compile();
   const app = modulo.createNestApplication({ rawBody: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
@@ -22,5 +24,8 @@ export async function limpiarBase(db: DataSource): Promise<void> {
   const tablas: { tablename: string }[] = await db.query(
     "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'migrations'",
   );
-  if (tablas.length) await db.query(`TRUNCATE ${tablas.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
+  if (tablas.length)
+    await db.query(
+      `TRUNCATE ${tablas.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`,
+    );
 }

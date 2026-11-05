@@ -1,11 +1,18 @@
 import {
-  CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, ServiceUnavailableException, UnauthorizedException,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { errors, jwtVerify, JWTVerifyGetKey } from 'jose';
 import { JWKS_KEY_SET } from './jwks.provider';
 import { IS_PUBLIC } from './public.decorator';
+import { TOKEN_EN_QUERY } from './token-en-query.decorator';
 import { parseApps, SuiteUser, TENANT_CLAIM } from './suite-user';
 
 // Valida el token del staff que emite PuntoVenta (Cuentas). Solo RS256: la clave HMAC de PuntoVenta no sirve aquí.
@@ -18,11 +25,22 @@ export class SuiteAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, [ctx.getHandler(), ctx.getClass()])) return true;
+    const targets = [ctx.getHandler(), ctx.getClass()];
+    if (this.reflector.getAllAndOverride<boolean>(IS_PUBLIC, targets))
+      return true;
 
     const req = ctx.switchToHttp().getRequest();
-    const [tipo, token] = (req.headers?.authorization ?? '').split(' ');
-    if (tipo !== 'Bearer' || !token) throw new UnauthorizedException('Falta el token');
+    let [tipo, token] = (req.headers?.authorization ?? '').split(' ');
+    const enQuery = req.query?.token;
+    if (
+      !token &&
+      typeof enQuery === 'string' &&
+      this.reflector.getAllAndOverride<boolean>(TOKEN_EN_QUERY, targets)
+    ) {
+      [tipo, token] = ['Bearer', enQuery];
+    }
+    if (tipo !== 'Bearer' || !token)
+      throw new UnauthorizedException('Falta el token');
 
     let payload: Record<string, unknown>;
     try {
@@ -36,19 +54,31 @@ export class SuiteAuthGuard implements CanActivate {
     } catch (e) {
       // Si no se pudo traer la clave pública de Cuentas, el token no es culpable: 503, no 401 (que borra la sesión).
       if (e instanceof errors.JWKSTimeout || !(e instanceof errors.JOSEError)) {
-        throw new ServiceUnavailableException({ code: 'CUENTAS_NO_DISPONIBLE', message: 'No se pudo validar la sesión con Cuentas' });
+        throw new ServiceUnavailableException({
+          code: 'CUENTAS_NO_DISPONIBLE',
+          message: 'No se pudo validar la sesión con Cuentas',
+        });
       }
       throw new UnauthorizedException('Token inválido o vencido');
     }
 
     const tenant = payload[TENANT_CLAIM];
     const userId = payload.nameid;
-    if (typeof tenant !== 'string' || !tenant || typeof userId !== 'string' || !userId) {
+    if (
+      typeof tenant !== 'string' ||
+      !tenant ||
+      typeof userId !== 'string' ||
+      !userId
+    ) {
       throw new UnauthorizedException('Token sin empresa o usuario');
     }
 
     const apps = parseApps(payload.apps);
-    if (!apps.includes('arm')) throw new ForbiddenException({ code: 'SIN_ARM', message: 'Tu empresa no tiene ARM contratado' });
+    if (!apps.includes('arm'))
+      throw new ForbiddenException({
+        code: 'SIN_ARM',
+        message: 'Tu empresa no tiene ARM contratado',
+      });
 
     const user: SuiteUser = {
       userId,

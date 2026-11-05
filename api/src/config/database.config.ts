@@ -14,7 +14,10 @@ export class DatabaseConfig implements TypeOrmOptionsFactory {
       migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
       synchronize: false,
       migrationsRun: this.config.get('DB_MIGRATIONS_RUN') === 'true',
-      ssl: this.config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+      ssl:
+        this.config.get('DB_SSL') === 'true'
+          ? { rejectUnauthorized: false }
+          : false,
       logging: ['error'],
     };
   }

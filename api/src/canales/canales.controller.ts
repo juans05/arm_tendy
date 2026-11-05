@@ -13,7 +13,12 @@ export class CanalesController {
   config() {
     const appId = process.env.META_APP_ID ?? '';
     const configId = process.env.META_EMBEDDED_SIGNUP_CONFIG_ID ?? '';
-    return { configurado: !!(appId && configId), appId, configId, graphVersion: process.env.WHATSAPP_API_VERSION ?? 'v20.0' };
+    return {
+      configurado: !!(appId && configId),
+      appId,
+      configId,
+      graphVersion: process.env.WHATSAPP_API_VERSION ?? 'v20.0',
+    };
   }
 
   @Get()
@@ -29,7 +34,10 @@ export class CanalesController {
 
   @Post('whatsapp/conectar-existente')
   @Roles('gerente')
-  conectarExistente(@MiembroActual() m: Miembro, @Body() dto: ConectarExistenteDto) {
+  conectarExistente(
+    @MiembroActual() m: Miembro,
+    @Body() dto: ConectarExistenteDto,
+  ) {
     return this.conexion.conectarExistente(m.tenant, dto);
   }
 }

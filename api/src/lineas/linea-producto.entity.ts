@@ -1,4 +1,11 @@
-import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  PrimaryGeneratedColumn,
+  Unique,
+} from 'typeorm';
 import { Miembro } from '../miembros/miembro.entity';
 
 // Lo que vende la empresa (Wuarikes: Barbería, Restaurante, Spa). Cada línea califica y agenda a su manera.
@@ -9,7 +16,8 @@ export class LineaProducto {
   @Column({ length: 200 }) tenant: string;
   @Column({ length: 100 }) nombre: string;
   @Column({ type: 'text', default: '' }) criterios: string;
-  @Column({ name: 'duracion_demo_min', type: 'int', default: 30 }) duracionDemoMin: number;
+  @Column({ name: 'duracion_demo_min', type: 'int', default: 30 })
+  duracionDemoMin: number;
   @Column({ default: true }) activa: boolean;
 
   @ManyToMany(() => Miembro)
