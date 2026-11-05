@@ -1,7 +1,7 @@
 // Login de la suite: lo atiende PuntoVenta (Cuentas). Responde MessageResult { code, message, data }.
 import { leerToken } from './sesion';
 
-const CUENTAS = process.env.NEXT_PUBLIC_CUENTAS_URL ?? 'http://localhost:5000';
+const CUENTAS = process.env.NEXT_PUBLIC_CUENTAS_URL ?? 'http://localhost:3001';
 
 export interface EmpresaAcceso {
   tenantId: number;

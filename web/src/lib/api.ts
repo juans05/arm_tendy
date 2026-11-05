@@ -1,6 +1,6 @@
 import { borrarToken, leerToken } from './sesion';
 
-export const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+export const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3002';
 
 export type Rol = 'gerente' | 'comercial';
 export type Estado = 'pendiente' | 'activo' | 'inactivo';
