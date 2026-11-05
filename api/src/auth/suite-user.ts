@@ -4,6 +4,8 @@ export interface SuiteUser {
   nombre: string;
   tenant: string;
   apps: string[];
+  /** Vencimiento del token (segundos epoch). */
+  exp?: number;
 }
 
 export const TENANT_CLAIM =

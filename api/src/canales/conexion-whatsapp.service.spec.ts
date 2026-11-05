@@ -64,10 +64,10 @@ describe('ConexionWhatsappService', () => {
       'GET /oauth/access_token',
       'POST /waba1/subscribed_apps',
       'POST /ph1/register',
-      'POST /ph1',
       'GET /ph1',
+      'POST /ph1',
     ]);
-    const redir = meta.llamadas[3].opts!.body.webhook_configuration;
+    const redir = meta.llamadas[4].opts!.body.webhook_configuration;
     expect(redir.override_callback_uri).toBe(
       `${process.env.ARM_PUBLIC_URL}/webhooks/whatsapp`,
     );
@@ -208,6 +208,44 @@ describe('ConexionWhatsappService', () => {
     expect(await db.getRepository(NumeroWhatsapp).count()).toBe(0);
   });
 
+  it('redirección rechazada y el único número de la cuenta es otro → 409 sin redirigir la cuenta', async () => {
+    const meta = metaFalso({
+      'POST /ph1': () => {
+        throw new MetaError('no soportado');
+      },
+      'GET /waba1/phone_numbers': () => ({ data: [{ id: 'ph-otro' }] }),
+    });
+    await expect(
+      svc(meta).conectar('wuarikes', {
+        code: 'c1',
+        wabaId: 'waba1',
+        phoneNumberId: 'ph1',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    const conOverride = meta.llamadas.filter(
+      (l) => l.ruta === '/waba1/subscribed_apps' && l.opts?.body,
+    );
+    expect(conOverride).toEqual([]);
+    expect(await db.getRepository(NumeroWhatsapp).count()).toBe(0);
+  });
+
+  it('si Meta falla al leer el número, no se redirige el webhook', async () => {
+    const meta = metaFalso({
+      'GET /ph1': () => {
+        throw new MetaError('timeout');
+      },
+    });
+    await expect(
+      svc(meta).conectar('wuarikes', {
+        code: 'c1',
+        wabaId: 'waba1',
+        phoneNumberId: 'ph1',
+      }),
+    ).rejects.toBeInstanceOf(BadGatewayException);
+    expect(rutas(meta)).not.toContain('POST /ph1');
+    expect(await db.getRepository(NumeroWhatsapp).count()).toBe(0);
+  });
+
   it('reconectar el mismo número en la misma empresa actualiza el token', async () => {
     await svc(metaFalso()).conectar('wuarikes', {
       code: 'c0',
@@ -235,8 +273,8 @@ describe('ConexionWhatsappService', () => {
     });
     expect(rutas(meta)).toEqual([
       'POST /waba1/subscribed_apps',
-      'POST /ph1',
       'GET /ph1',
+      'POST /ph1',
     ]);
     expect(meta.llamadas.every((l) => l.opts?.token === 'tok-manual')).toBe(
       true,

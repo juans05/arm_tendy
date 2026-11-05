@@ -103,7 +103,6 @@ export class ConexionWhatsappService {
     token: string,
     coexistencia: boolean,
   ) {
-    await this.redirigir(phoneId, wabaId, token);
     const info = await this.meta.llamar<{
       display_phone_number?: string;
       verified_name?: string;
@@ -111,6 +110,9 @@ export class ConexionWhatsappService {
       token,
       query: { fields: 'display_phone_number,verified_name' },
     });
+    await this.asegurarLibre(tenant, phoneId);
+    // La redirección es el último paso remoto: si algo falla antes, el webhook del número no se toca.
+    await this.redirigir(phoneId, wabaId, token);
     const datos = {
       tenant,
       phoneNumberId: phoneId,
@@ -158,7 +160,8 @@ export class ConexionWhatsappService {
         `/${wabaId}/phone_numbers`,
         { token },
       );
-      if (data.length !== 1) {
+      // ponytail: la redirección de cuenta también aplica a números que se agreguen después a esa cuenta.
+      if (data.length !== 1 || data[0].id !== phoneId) {
         throw new ConflictException(
           'Este número comparte cuenta de WhatsApp Business con otros números; conéctalo desde una cuenta propia',
         );

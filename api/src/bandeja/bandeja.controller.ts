@@ -8,19 +8,24 @@ import {
   Post,
   Sse,
 } from '@nestjs/common';
-import { map, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
+import { DataSource } from 'typeorm';
+import { CurrentUser } from '../auth/current-user.decorator';
+import { SuiteUser } from '../auth/suite-user';
 import { TokenEnQuery } from '../auth/token-en-query.decorator';
 import { Miembro } from '../miembros/miembro.entity';
 import { MiembroActual } from '../miembros/miembros.decorators';
 import { BandejaService } from './bandeja.service';
 import { EnviarMensajeDto } from './dto/enviar-mensaje.dto';
 import { EventosService } from './eventos.service';
+import { flujoDeSesion } from './sesion-sse';
 
 @Controller()
 export class BandejaController {
   constructor(
     private readonly bandeja: BandejaService,
     private readonly eventos: EventosService,
+    private readonly db: DataSource,
   ) {}
 
   @Get('conversaciones')
@@ -48,7 +53,18 @@ export class BandejaController {
   // Tiempo real de la bandeja: solo eventos de la empresa del miembro.
   @Sse('eventos')
   @TokenEnQuery()
-  eventosSse(@MiembroActual() m: Miembro): Observable<MessageEvent> {
-    return this.eventos.deEmpresa(m.tenant).pipe(map((data) => ({ data })));
+  eventosSse(
+    @MiembroActual() m: Miembro,
+    @CurrentUser() u: SuiteUser,
+  ): Observable<MessageEvent> {
+    return flujoDeSesion(this.eventos.deEmpresa(m.tenant), {
+      venceEn: u.exp ? u.exp * 1000 : undefined,
+      sigueActivo: () =>
+        this.db
+          .getRepository(Miembro)
+          .exists({ where: { id: m.id, estado: 'activo' } }),
+      revisarCadaMs: Number(process.env.SSE_REVISAR_MS ?? 60_000),
+      latidoCadaMs: 25_000,
+    });
   }
 }

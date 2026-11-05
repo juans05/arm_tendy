@@ -16,17 +16,23 @@ const firmar = (cuerpo: string) =>
     .digest('hex');
 
 // Cliente SSE mínimo: acumula lo recibido.
-function escuchar(
-  url: string,
-): Promise<{ datos: () => string; status: number; cerrar: () => void }> {
+function escuchar(url: string): Promise<{
+  datos: () => string;
+  status: number;
+  cerrar: () => void;
+  termino: () => boolean;
+}> {
   return new Promise((ok, mal) => {
     let buf = '';
+    let fin = false;
     const req = http.get(url, (res) => {
       res.on('data', (d) => (buf += d));
+      res.on('end', () => (fin = true));
       ok({
         datos: () => buf,
         status: res.statusCode!,
         cerrar: () => req.destroy(),
+        termino: () => fin,
       });
     });
     req.on('error', (e) =>
@@ -41,6 +47,7 @@ describe('Bandeja (e2e)', () => {
   let base: string;
 
   beforeAll(async () => {
+    process.env.SSE_REVISAR_MS = '100';
     f = await crearFirmador();
     app = await crearApp((b) =>
       b.overrideProvider(JWKS_KEY_SET).useValue(f.keySet),
@@ -49,6 +56,39 @@ describe('Bandeja (e2e)', () => {
     base = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}`;
   });
   afterAll(() => app.close());
+
+  it('SSE se corta cuando desactivan al miembro', async () => {
+    const gerente = await f.token({ userId: 'g1', tenant: 'empresa-e' });
+    const comercial = await f.token({ userId: 'c1', tenant: 'empresa-e' });
+    await request(app.getHttpServer())
+      .get('/me')
+      .set('Authorization', `Bearer ${gerente}`)
+      .expect(200);
+    const me = await request(app.getHttpServer())
+      .get('/me')
+      .set('Authorization', `Bearer ${comercial}`)
+      .expect(200);
+    const id = me.body.miembro.id;
+    await request(app.getHttpServer())
+      .patch(`/miembros/${id}`)
+      .set('Authorization', `Bearer ${gerente}`)
+      .send({ estado: 'activo' })
+      .expect(200);
+
+    const s = await escuchar(`${base}/eventos?token=${comercial}`);
+    expect(s.status).toBe(200);
+    await request(app.getHttpServer())
+      .patch(`/miembros/${id}`)
+      .set('Authorization', `Bearer ${gerente}`)
+      .send({ estado: 'inactivo' })
+      .expect(200);
+
+    const limite = Date.now() + 2000;
+    while (!s.termino() && Date.now() < limite)
+      await new Promise((r) => setTimeout(r, 50));
+    s.cerrar();
+    expect(s.termino()).toBe(true);
+  });
 
   it('SSE no cruza empresas', async () => {
     const db = app.get(DataSource);

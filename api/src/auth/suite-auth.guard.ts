@@ -86,6 +86,7 @@ export class SuiteAuthGuard implements CanActivate {
       nombre: String(payload.nombre ?? ''),
       tenant,
       apps,
+      exp: typeof payload.exp === 'number' ? payload.exp : undefined,
     };
     req.user = user;
     return true;
