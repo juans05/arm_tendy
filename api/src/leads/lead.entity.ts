@@ -61,6 +61,29 @@ export class Lead {
   monto: number | null;
   @Column({ type: 'varchar', length: 100, nullable: true }) plan: string | null;
   @Column({ type: 'jsonb', nullable: true }) referral: Referral | null;
+  /** Cuándo y por qué la conversación pasó de la IA a una persona (primera vez). */
+  @Column({ name: 'traspaso_en', type: 'timestamptz', nullable: true })
+  traspasoEn: Date | null;
+  @Column({
+    name: 'traspaso_motivo',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  traspasoMotivo: string | null;
+  @Column({ name: 'seguimiento_paso', type: 'int', default: 0 })
+  seguimientoPaso: number;
+  @Column({ name: 'seguimiento_proximo', type: 'timestamptz', nullable: true })
+  seguimientoProximo: Date | null;
+  /** Horarios que la IA ofreció en el chat, para reservar el que el cliente elija. */
+  @Column({
+    name: 'horarios_ofrecidos',
+    type: 'jsonb',
+    nullable: true,
+    select: false,
+  })
+  horariosOfrecidos:
+    { texto: string; inicio: string; miembroId: string }[] | null;
   @Column({ name: 'created_at', type: 'timestamptz', default: () => 'now()' })
   createdAt: Date;
 }

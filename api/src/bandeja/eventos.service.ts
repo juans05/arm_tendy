@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { filter, map, Observable, Subject } from 'rxjs';
 import type { Lead } from '../leads/lead.entity';
 import type { Pregunta } from '../conocimiento/pregunta.entity';
+import type { Alerta } from '../alertas/alerta.entity';
 import { ModoConversacion } from './conversacion.entity';
 import { Mensaje } from './mensaje.entity';
 
@@ -14,7 +15,9 @@ export type EventoBandeja =
       borrador: string | null;
     }
   | { tipo: 'lead'; conversacionId: string; lead: Lead }
-  | { tipo: 'pregunta'; pregunta: Pregunta };
+  | { tipo: 'pregunta'; pregunta: Pregunta }
+  /** Solo llega al miembro destinatario (se filtra en el SSE). */
+  | { tipo: 'alerta'; miembroId: string; alerta: Alerta };
 
 export type EventoConEmpresa = { tenant: string; evento: EventoBandeja };
 

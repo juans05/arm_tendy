@@ -9,7 +9,7 @@ import {
   Sse,
   StreamableFile,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { filter, Observable } from 'rxjs';
 import { DataSource } from 'typeorm';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SuiteUser } from '../auth/suite-user';
@@ -31,7 +31,7 @@ export class BandejaController {
 
   @Get('conversaciones')
   listar(@MiembroActual() m: Miembro) {
-    return this.bandeja.listar(m.tenant);
+    return this.bandeja.listar(m);
   }
 
   @Get('conversaciones/:id/mensajes')
@@ -39,7 +39,7 @@ export class BandejaController {
     @MiembroActual() m: Miembro,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.bandeja.mensajes(m.tenant, id);
+    return this.bandeja.mensajes(m, id);
   }
 
   @Post('conversaciones/:id/mensajes')
@@ -57,7 +57,7 @@ export class BandejaController {
     @MiembroActual() m: Miembro,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    const { datos, mime } = await this.bandeja.media(m.tenant, id);
+    const { datos, mime } = await this.bandeja.media(m, id);
     return new StreamableFile(datos, { type: mime });
   }
 
@@ -68,7 +68,11 @@ export class BandejaController {
     @MiembroActual() m: Miembro,
     @CurrentUser() u: SuiteUser,
   ): Observable<MessageEvent> {
-    return flujoDeSesion(this.eventos.deEmpresa(m.tenant), {
+    // ponytail: los eventos de chats ajenos llegan igual al comercial (la lista y los mensajes sí se filtran).
+    const propios = this.eventos
+      .deEmpresa(m.tenant)
+      .pipe(filter((e) => e.tipo !== 'alerta' || e.miembroId === m.id));
+    return flujoDeSesion(propios, {
       venceEn: u.exp ? u.exp * 1000 : undefined,
       sigueActivo: () =>
         this.db

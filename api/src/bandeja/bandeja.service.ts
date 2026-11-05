@@ -19,6 +19,10 @@ export interface ConversacionResumen {
   ultimoMensajeEn: Date;
   ultimoEntranteEn: Date | null;
   ultimoTexto: string | null;
+  ultimoMensajeId: string | null;
+  borrador: string | null;
+  duenoId: string | null;
+  etapa: string | null;
 }
 
 const VENTANA_MS = 24 * 3600_000;
@@ -33,23 +37,29 @@ export class BandejaService {
   ) {}
 
   // ponytail: las 200 conversaciones más recientes; paginar cuando una empresa tenga más.
-  listar(tenant: string): Promise<ConversacionResumen[]> {
+  // Un comercial ve sus conversaciones y las que aún no tienen dueño; el gerente, todas.
+  listar(m: Miembro): Promise<ConversacionResumen[]> {
     return this.db.query(
-      `SELECT c.id, c.modo, c.no_leidos AS "noLeidos", c.ultimo_mensaje_en AS "ultimoMensajeEn", c.ultimo_entrante_en AS "ultimoEntranteEn",
+      `SELECT c.id, c.modo, c.borrador, c.no_leidos AS "noLeidos", c.ultimo_mensaje_en AS "ultimoMensajeEn", c.ultimo_entrante_en AS "ultimoEntranteEn",
               json_build_object('id', ct.id, 'nombre', ct.nombre, 'telefono', ct.telefono) AS contacto,
-              (SELECT COALESCE(m.texto, '[' || m.tipo || ']') FROM mensajes m
-                WHERE m.conversacion_id = c.id ORDER BY m.created_at DESC LIMIT 1) AS "ultimoTexto"
-         FROM conversaciones c JOIN contactos ct ON ct.id = c.contacto_id
-        WHERE c.tenant = $1
+              u.id AS "ultimoMensajeId", COALESCE(u.texto, '[' || u.tipo || ']') AS "ultimoTexto",
+              l.dueno_id AS "duenoId", l.etapa
+         FROM conversaciones c
+         JOIN contactos ct ON ct.id = c.contacto_id
+         LEFT JOIN leads l ON l.conversacion_id = c.id
+         LEFT JOIN LATERAL (SELECT m.id, m.texto, m.tipo FROM mensajes m
+                             WHERE m.conversacion_id = c.id ORDER BY m.created_at DESC LIMIT 1) u ON true
+        WHERE c.tenant = $1 AND ($2 = 'gerente' OR l.dueno_id IS NULL OR l.dueno_id = $3)
         ORDER BY c.ultimo_mensaje_en DESC
         LIMIT 200`,
-      [tenant],
+      [m.tenant, m.rol, m.id],
     );
   }
 
   // ponytail: los últimos 300 mensajes; cargar más hacia atrás cuando haga falta.
-  async mensajes(tenant: string, conversacionId: string): Promise<Mensaje[]> {
-    await this.conversacion(tenant, conversacionId);
+  async mensajes(m: Miembro, conversacionId: string): Promise<Mensaje[]> {
+    const tenant = m.tenant;
+    await this.conversacion(tenant, conversacionId, m);
     await this.db
       .getRepository(Conversacion)
       .update({ id: conversacionId, tenant }, { noLeidos: 0 });
@@ -67,7 +77,7 @@ export class BandejaService {
     miembro: Miembro,
     texto: string,
   ): Promise<Mensaje> {
-    const conv = await this.conversacion(tenant, conversacionId);
+    const conv = await this.conversacion(tenant, conversacionId, miembro);
     // Regla de WhatsApp: texto libre solo dentro de las 24 h desde el último mensaje del cliente.
     if (
       !conv.ultimoEntranteEn ||
@@ -102,7 +112,17 @@ export class BandejaService {
       await em.update(
         Conversacion,
         { id: conversacionId },
-        { modo: 'humano', ultimoMensajeEn: m.createdAt, borrador: null },
+        {
+          modo: 'humano',
+          ultimoMensajeEn: m.createdAt,
+          borrador: null,
+          alertaNivel: 0,
+        },
+      );
+      // Quien responde un lead sin dueño se queda con él.
+      await em.query(
+        'UPDATE leads SET dueno_id = $1 WHERE conversacion_id = $2 AND dueno_id IS NULL',
+        [miembro.id, conversacionId],
       );
       return m;
     });
@@ -111,26 +131,41 @@ export class BandejaService {
   }
 
   async media(
-    tenant: string,
+    miembro: Miembro,
     mensajeId: string,
   ): Promise<{ datos: Buffer; mime: string }> {
     const m = await this.db
       .getRepository(Mensaje)
-      .findOneBy({ id: mensajeId, tenant });
+      .findOneBy({ id: mensajeId, tenant: miembro.tenant });
     if (!m?.mediaId) throw new NotFoundException('El mensaje no tiene archivo');
-    const conv = await this.conversacion(tenant, m.conversacionId);
+    const conv = await this.conversacion(
+      miembro.tenant,
+      m.conversacionId,
+      miembro,
+    );
     return this.mediaWa.descargar(conv.numero!, m.mediaId);
   }
 
   private async conversacion(
     tenant: string,
     id: string,
+    m: Miembro,
   ): Promise<Conversacion> {
     const c = await this.db.getRepository(Conversacion).findOne({
       where: { id, tenant },
       relations: { numero: true, contacto: true },
     });
-    if (!c) throw new NotFoundException('Conversación no encontrada');
+    if (!c || !(await this.puedeVer(m, id)))
+      throw new NotFoundException('Conversación no encontrada');
     return c;
+  }
+
+  async puedeVer(m: Miembro, conversacionId: string): Promise<boolean> {
+    if (m.rol === 'gerente') return true;
+    const [l] = await this.db.query(
+      'SELECT dueno_id FROM leads WHERE conversacion_id = $1',
+      [conversacionId],
+    );
+    return !l?.dueno_id || l.dueno_id === m.id;
   }
 }

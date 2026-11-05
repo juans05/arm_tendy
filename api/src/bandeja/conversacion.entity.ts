@@ -37,4 +37,7 @@ export class Conversacion {
   @Column({ name: 'no_leidos', type: 'int', default: 0 }) noLeidos: number;
   // Respuesta propuesta por la IA cuando la empresa usa el modo "propone".
   @Column({ type: 'text', nullable: true }) borrador: string | null;
+  // Avisos de "lead sin atender" ya enviados: 1 al comercial, 2 también al gerente. Vuelve a 0 al responder.
+  @Column({ name: 'alerta_nivel', type: 'smallint', default: 0 })
+  alertaNivel: number;
 }

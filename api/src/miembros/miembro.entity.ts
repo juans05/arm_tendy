@@ -27,6 +27,9 @@ export class Miembro {
   })
   celularAlertas: string | null;
   @Column({ name: 'recibe_demos', default: false }) recibeDemos: boolean;
+  // Tipos de alerta que el miembro no quiere recibir.
+  @Column({ name: 'alertas_off', type: 'jsonb', default: [] })
+  alertasOff: string[];
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

@@ -30,6 +30,11 @@ describe('BandejaService', () => {
   const miembro = {
     id: '00000000-0000-0000-0000-000000000001',
     tenant: 'wuarikes',
+    userId: 'u1',
+    username: 'gere',
+    nombre: 'Gere',
+    rol: 'gerente',
+    estado: 'activo',
   } as Miembro;
 
   beforeAll(async () => {
@@ -38,6 +43,7 @@ describe('BandejaService', () => {
   afterAll(() => db.destroy());
   beforeEach(async () => {
     await limpiarBase(db);
+    await db.getRepository(Miembro).save(miembro);
     llamadas = [];
     falla = false;
     emitidos = [];
@@ -91,7 +97,7 @@ describe('BandejaService', () => {
       [a.id],
     );
 
-    const lista = await svc.listar('wuarikes');
+    const lista = await svc.listar(miembro);
     expect(lista.map((c) => c.id)).toEqual([b.id, a.id]);
     expect(lista[0]).toMatchObject({
       contacto: { telefono: '51922', nombre: 'Rosa' },
@@ -111,12 +117,39 @@ describe('BandejaService', () => {
         audio: { id: 'm1' },
       }),
     );
-    expect((await svc.listar('wuarikes'))[0].ultimoTexto).toBe('[audio]');
+    expect((await svc.listar(miembro))[0].ultimoTexto).toBe('[audio]');
+  });
+
+  it('un comercial solo ve sus conversaciones y las que no tienen dueño', async () => {
+    const comercial = await db.getRepository(Miembro).save({
+      tenant: 'wuarikes',
+      userId: 'u2',
+      username: 'ana',
+      nombre: 'Ana',
+      rol: 'comercial',
+      estado: 'activo',
+    });
+    const a = await conversacion('wuarikes', 'ph1', '51911');
+    const b = await conversacion('wuarikes', 'ph1', '51922');
+    const c = await conversacion('wuarikes', 'ph1', '51933');
+    await db.query(
+      'UPDATE leads SET dueno_id = $1 WHERE conversacion_id = $2',
+      [comercial.id, a.id],
+    );
+    await db.query(
+      'UPDATE leads SET dueno_id = $1 WHERE conversacion_id = $2',
+      [miembro.id, b.id],
+    );
+    const ids = (await svc.listar(comercial)).map((x) => x.id).sort();
+    expect(ids).toEqual([a.id, c.id].sort());
+    await expect(svc.mensajes(comercial, b.id)).rejects.toThrow(
+      'no encontrada',
+    );
   });
 
   it('mensajes pone noLeidos en 0', async () => {
     const c = await conversacion();
-    const ms = await svc.mensajes('wuarikes', c.id);
+    const ms = await svc.mensajes(miembro, c.id);
     expect(ms.map((m) => m.texto)).toEqual(['Hola']);
     expect(
       (await db.getRepository(Conversacion).findOneByOrFail({ id: c.id }))
@@ -169,6 +202,16 @@ describe('BandejaService', () => {
     ]);
   });
 
+  it('quien responde un lead sin dueño se queda con él', async () => {
+    const c = await conversacion();
+    await svc.responder('wuarikes', c.id, miembro, 'hola');
+    const [l] = await db.query(
+      'SELECT dueno_id FROM leads WHERE conversacion_id = $1',
+      [c.id],
+    );
+    expect(l.dueno_id).toBe(miembro.id);
+  });
+
   it('responder fuera de la ventana → 409 FUERA_DE_VENTANA sin llamar a Meta', async () => {
     const c = await conversacion();
     await db
@@ -209,7 +252,7 @@ describe('BandejaService', () => {
 
   it('conversación de otra empresa → 404', async () => {
     const ajena = await conversacion('tendy', 'ph2', '51933');
-    await expect(svc.mensajes('wuarikes', ajena.id)).rejects.toBeInstanceOf(
+    await expect(svc.mensajes(miembro, ajena.id)).rejects.toBeInstanceOf(
       NotFoundException,
     );
     await expect(

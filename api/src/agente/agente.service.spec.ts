@@ -12,6 +12,7 @@ import { ConocimientoService } from '../conocimiento/conocimiento.service';
 import { Pregunta } from '../conocimiento/pregunta.entity';
 import { EjecucionIa } from '../ia/ejecucion-ia.entity';
 import { IaService } from '../ia/ia.service';
+import { LeadHistorial } from '../leads/lead-historial.entity';
 import { Lead } from '../leads/lead.entity';
 import { LineaProducto } from '../lineas/linea-producto.entity';
 import { AgenteService } from './agente.service';
@@ -113,6 +114,18 @@ describe('AgenteService', () => {
     expect(emitidos.map((e) => e.tipo)).toEqual(
       expect.arrayContaining(['mensaje', 'lead']),
     );
+  });
+
+  it('el cambio de etapa que hace la IA queda en el historial', async () => {
+    const conv = await llega();
+    await agente.atender(conv.id);
+    expect(await db.getRepository(LeadHistorial).find()).toEqual([
+      expect.objectContaining({
+        de: 'nuevo',
+        a: 'en_conversacion',
+        miembroId: null,
+      }),
+    ]);
   });
 
   it('modo propone: no envía y deja borrador', async () => {

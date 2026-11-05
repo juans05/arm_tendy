@@ -9,6 +9,7 @@ import { ConocimientoService } from '../conocimiento/conocimiento.service';
 import { IaService } from '../ia/ia.service';
 import { trazar } from '../ia/traza';
 import { Etapa, Lead } from '../leads/lead.entity';
+import { anotarEtapa } from '../leads/leads.service';
 import { LineaProducto } from '../lineas/linea-producto.entity';
 import { configPorDefecto, EmpresaConfig } from './empresa-config.entity';
 import { construirMensajes, Decision, leerDecision } from './prompt';
@@ -159,13 +160,14 @@ export class AgenteService {
       ? lineas.find((l) => l.nombre.toLowerCase() === d.linea!.toLowerCase())
       : undefined;
     if (linea) cambios.lineaId = linea.id;
-    if (ETAPAS_DE_LA_IA.includes(lead.etapa) && d.etapa !== lead.etapa) {
-      cambios.etapa = d.etapa;
-      cambios.etapaEn = new Date();
-      if (d.etapa === 'descartado')
-        cambios.motivo = d.motivoDescarte ?? 'no aplica';
-    }
-    await this.db.getRepository(Lead).update({ id: lead.id }, cambios);
+    const cambiaEtapa =
+      ETAPAS_DE_LA_IA.includes(lead.etapa) && d.etapa !== lead.etapa;
+    if (cambiaEtapa && d.etapa === 'descartado')
+      cambios.motivo = d.motivoDescarte ?? 'no aplica';
+    await this.db.transaction(async (em) => {
+      await em.update(Lead, { id: lead.id }, cambios);
+      if (cambiaEtapa) await anotarEtapa(em, lead, d.etapa, null);
+    });
     this.eventos.emitir(conv.tenant, {
       tipo: 'lead',
       conversacionId: conv.id,

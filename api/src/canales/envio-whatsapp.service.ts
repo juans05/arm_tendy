@@ -55,4 +55,46 @@ export class EnvioWhatsappService {
     if (!id) throw new MetaError('respuesta sin id de mensaje');
     return id;
   }
+
+  /** Plantilla aprobada por Meta: la única forma de escribir fuera de la ventana de 24 h. */
+  async enviarPlantilla(
+    numero: NumeroWhatsapp,
+    a: string,
+    nombre: string,
+    idioma: string,
+    parametros: string[] = [],
+  ): Promise<string> {
+    const r = await this.meta.llamar<{ messages?: { id: string }[] }>(
+      'POST',
+      `/${numero.phoneNumberId}/messages`,
+      {
+        token: numero.token,
+        body: {
+          messaging_product: 'whatsapp',
+          to: a,
+          type: 'template',
+          template: {
+            name: nombre,
+            language: { code: idioma },
+            ...(parametros.length
+              ? {
+                  components: [
+                    {
+                      type: 'body',
+                      parameters: parametros.map((text) => ({
+                        type: 'text',
+                        text,
+                      })),
+                    },
+                  ],
+                }
+              : {}),
+          },
+        },
+      },
+    );
+    const id = r.messages?.[0]?.id;
+    if (!id) throw new MetaError('respuesta sin id de mensaje');
+    return id;
+  }
 }
