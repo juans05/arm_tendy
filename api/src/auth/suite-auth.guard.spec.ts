@@ -97,6 +97,7 @@ describe('SuiteAuthGuard', () => {
       nombre: 'Juan',
       tenant: 'wuarikes',
       apps: ['arp', 'arm'],
+      exp: expect.any(Number),
     });
   });
 
