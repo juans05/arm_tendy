@@ -8,6 +8,8 @@ export async function crearApp(
   overrides: (b: TestingModuleBuilder) => TestingModuleBuilder = (b) => b,
 ): Promise<INestApplication> {
   process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
+  // El barrido de cada minuto tocaría la base mientras las pruebas la vacían.
+  process.env.BARRIDO ??= 'off';
   const { AppModule } = await import('../../src/app.module');
   const modulo = await overrides(
     Test.createTestingModule({ imports: [AppModule] }),

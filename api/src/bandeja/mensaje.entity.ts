@@ -10,7 +10,8 @@ import { Referral } from '../canales/meta-webhook.util';
 import { Conversacion } from './conversacion.entity';
 
 export type Direccion = 'entrante' | 'saliente';
-export type Origen = 'cliente' | 'humano' | 'app_celular' | 'ia';
+// sistema: recordatorios y seguimientos automáticos.
+export type Origen = 'cliente' | 'humano' | 'app_celular' | 'ia' | 'sistema';
 
 @Entity('mensajes')
 @Index(['conversacionId', 'createdAt'])

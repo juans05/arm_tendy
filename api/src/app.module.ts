@@ -10,6 +10,7 @@ import { AgenteModule } from './agente/agente.module';
 import { AlertasModule } from './alertas/alertas.module';
 import { CalendarioModule } from './calendario/calendario.module';
 import { LeadsModule } from './leads/leads.module';
+import { SeguimientoModule } from './seguimiento/seguimiento.module';
 import { BandejaModule } from './bandeja/bandeja.module';
 import { CanalesModule } from './canales/canales.module';
 import { ConocimientoModule } from './conocimiento/conocimiento.module';
@@ -34,6 +35,7 @@ import { RolesGuard } from './miembros/roles.guard';
     AlertasModule,
     LeadsModule,
     CalendarioModule,
+    SeguimientoModule,
   ],
   controllers: [HealthController],
   // El orden importa: primero el token, luego el miembro, luego el rol.
