@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource, EntityManager, FindOptionsWhere, IsNull } from 'typeorm';
+import { Tarea } from '../actividad/tarea.entity';
 import { AlertasService } from '../alertas/alertas.service';
 import { Contacto } from '../bandeja/contacto.entity';
 import { Conversacion } from '../bandeja/conversacion.entity';
@@ -29,6 +30,41 @@ const MOTIVOS_TRASPASO: Record<string, string> = {
 };
 
 export type FiltroLeads = { etapa?: Etapa; lineaId?: string; duenoId?: string };
+
+export const ORDENES = [
+  'reciente',
+  'antiguo',
+  'puntaje',
+  'monto',
+  'nombre',
+] as const;
+/** Filtros de la tabla de leads; también es lo que guarda una vista. duenoId 'sin': sin dueño. */
+export type FiltroTabla = {
+  q?: string;
+  etapas?: Etapa[];
+  lineaId?: string;
+  duenoId?: string;
+  calificado?: boolean;
+  orden?: (typeof ORDENES)[number];
+  pagina?: number;
+  porPagina?: number;
+};
+
+const ORDEN_SQL: Record<(typeof ORDENES)[number], [string, 'ASC' | 'DESC']> = {
+  reciente: ['l.etapaEn', 'DESC'],
+  antiguo: ['l.etapaEn', 'ASC'],
+  puntaje: ['l.puntaje', 'DESC'],
+  monto: ['l.monto', 'DESC'],
+  nombre: ['c.nombre', 'ASC'],
+};
+
+const DIA = 86_400_000;
+/** Automatizaciones: al entrar a estas etapas, el dueño recibe su próxima tarea. */
+const TAREA_AL_ENTRAR: Partial<Record<Etapa, [string, number]>> = {
+  no_asistio: ['Reagendar la demo', 1],
+  demo_realizada: ['Enviar la propuesta y cerrar', 2],
+  ganado: ['Dar de alta al cliente en ARP', 1],
+};
 export type CambioLead = {
   etapa?: Etapa;
   duenoId?: string | null;
@@ -66,6 +102,27 @@ export async function anotarEtapa(
     a,
     miembroId,
   });
+  // Un lead cerrado ya no necesita las tareas que crearon las automatizaciones.
+  if (ETAPAS_CERRADAS.includes(a))
+    await em.update(
+      Tarea,
+      { leadId: lead.id, origen: 'auto', estado: 'pendiente' },
+      { estado: 'cancelada' },
+    );
+  const tarea = TAREA_AL_ENTRAR[a];
+  if (tarea) {
+    const { duenoId } = await em.findOneByOrFail(Lead, { id: lead.id });
+    if (duenoId)
+      await em.insert(Tarea, {
+        tenant: lead.tenant,
+        leadId: lead.id,
+        titulo: tarea[0],
+        venceEn: new Date(Date.now() + tarea[1] * DIA),
+        responsableId: duenoId,
+        creadorId: null,
+        origen: 'auto',
+      });
+  }
   return true;
 }
 
@@ -101,12 +158,59 @@ export class LeadsService {
     });
   }
 
+  /** Tabla de leads: búsqueda por nombre, teléfono o dato extraído, filtros, orden y páginas. */
+  async tabla(
+    m: Miembro,
+    f: FiltroTabla,
+  ): Promise<{ items: Lead[]; total: number }> {
+    const qb = this.db
+      .getRepository(Lead)
+      .createQueryBuilder('l')
+      .innerJoinAndSelect('l.contacto', 'c')
+      .where('l.tenant = :tenant', { tenant: m.tenant });
+    if (m.rol !== 'gerente')
+      qb.andWhere('(l.dueno_id = :yo OR l.dueno_id IS NULL)', { yo: m.id });
+    const q = f.q?.trim();
+    if (q) {
+      const patron = `%${q.replace(/[\\%_]/g, (x) => '\\' + x)}%`;
+      qb.andWhere(
+        `(c.nombre ILIKE :p OR c.telefono LIKE :p OR l.plan ILIKE :p
+          OR EXISTS (SELECT 1 FROM jsonb_each(l.datos) d WHERE d.value->>'valor' ILIKE :p))`,
+        { p: patron },
+      );
+    }
+    if (f.etapas?.length)
+      qb.andWhere('l.etapa IN (:...etapas)', { etapas: f.etapas });
+    if (f.lineaId) qb.andWhere('l.linea_id = :linea', { linea: f.lineaId });
+    if (f.duenoId === 'sin') qb.andWhere('l.dueno_id IS NULL');
+    else if (f.duenoId)
+      qb.andWhere('l.dueno_id = :dueno', { dueno: f.duenoId });
+    if (f.calificado !== undefined)
+      qb.andWhere('l.calificado = :cal', { cal: f.calificado });
+    const [col, dir] = ORDEN_SQL[f.orden ?? 'reciente'];
+    const porPagina = Math.min(f.porPagina ?? 50, 100);
+    const [items, total] = await qb
+      .orderBy(col, dir, 'NULLS LAST')
+      .addOrderBy('l.id')
+      .skip(((f.pagina ?? 1) - 1) * porPagina)
+      .take(porPagina)
+      .getManyAndCount();
+    return { items, total };
+  }
+
   async uno(m: Miembro, id: string): Promise<Lead> {
     const lead = await this.db
       .getRepository(Lead)
       .findOne({ where: this.visibles(m, { tenant: m.tenant, id }) });
     if (!lead) throw new NotFoundException('Lead no encontrado');
     return lead;
+  }
+
+  async conContacto(m: Miembro, id: string): Promise<Lead> {
+    await this.uno(m, id);
+    return this.db
+      .getRepository(Lead)
+      .findOneOrFail({ where: { id }, relations: { contacto: true } });
   }
 
   async historial(m: Miembro, id: string): Promise<LeadHistorial[]> {

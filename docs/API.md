@@ -27,6 +27,12 @@ Base: `https://<api>` (local `http://localhost:3002`). Todas las rutas piden `Au
 | `GET /leads?etapa&lineaId&duenoId` | Embudo |
 | `PATCH /leads/:id` | `{ etapa?, duenoId?, lineaId?, monto?, plan?, motivo? }`. Ganado exige monto; perdido y descartado exigen motivo; solo G reasigna (un comercial puede tomar uno sin dueño) |
 | `GET /leads/:id/historial` | Cambios de etapa |
+| `GET /leads/tabla?q&etapas=a,b&lineaId&duenoId(uuid o sin)&calificado&orden&pagina&porPagina` | Tabla con búsqueda por nombre, teléfono o dato extraído; devuelve `{ items, total }` (≤ 100 por página) |
+| `GET /leads/:id` | Lead con su contacto |
+| `GET /leads/:id/actividad` | Línea de tiempo: etapas, notas, tareas y citas, de la más nueva a la más vieja |
+| `POST /leads/:id/notas` `{ texto }` · `DELETE /notas/:id` | Notas; `@usuario` avisa a los compañeros que ven el lead. Borra el autor o G |
+| `POST /leads/:id/tareas` `{ titulo, venceEn?, responsableId? }` · `PATCH /tareas/:id` · `GET /tareas?estado&todas` | Tareas; el responsable debe ver el lead. `todas` solo para G |
+| `GET /vistas` · `POST /vistas` `{ nombre, filtros, compartida }` · `DELETE /vistas/:id` | Vistas guardadas de la tabla (propias y compartidas) |
 | `GET /citas?desde&hasta` · `POST /citas` · `PATCH /citas/:id` · `POST /citas/:id/estado` | Citas; cruce → 409 |
 | `GET /bloqueos?desde&hasta` · `POST /bloqueos` · `DELETE /bloqueos/:id` | Bloqueos de agenda |
 | `GET /alertas` · `POST /alertas/leidas` · `GET/PUT /alertas/preferencias` | Alertas del miembro |

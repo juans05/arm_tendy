@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { ActividadService } from '../actividad/actividad.service';
 import { DataSource } from 'typeorm';
 import {
   configPorDefecto,
@@ -24,8 +25,8 @@ const HORA_RESUMEN = 8;
 type Escrito = { texto: string; plantilla: string | null; params: string[] };
 
 /**
- * Barrido de cada minuto: seguimiento de los "todavía no", leads sin atender, recordatorios de demo y
- * resumen diario. Cada tarea deja una marca en la base para no repetirse.
+ * Barrido de cada minuto: seguimiento de los "todavía no", leads sin atender, recordatorios de demo,
+ * resumen diario y tareas vencidas. Cada tarea deja una marca en la base para no repetirse.
  */
 @Injectable()
 export class SeguimientoService {
@@ -36,6 +37,7 @@ export class SeguimientoService {
     private readonly envio: EnvioWhatsappService,
     private readonly alertas: AlertasService,
     private readonly eventos: EventosService,
+    @Optional() private readonly actividad?: ActividadService,
   ) {}
 
   async barrer(ahora = new Date()): Promise<void> {
@@ -44,6 +46,7 @@ export class SeguimientoService {
       () => this.sinAtender(ahora),
       () => this.recordatorios(ahora),
       () => this.resumenes(ahora),
+      () => this.actividad?.avisarVencidas(ahora),
     ]) {
       try {
         await tarea();

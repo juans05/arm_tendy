@@ -8,7 +8,10 @@ export type TipoAlerta =
   | 'pregunta'
   | 'sin_atender'
   | 'resumen_diario'
-  | 'seguimiento';
+  | 'seguimiento'
+  | 'mencion'
+  | 'tarea_asignada'
+  | 'tarea_vencida';
 
 // Campanita de ARM (y, si el miembro tiene celular de alertas, también por WhatsApp).
 @Entity('alertas')
