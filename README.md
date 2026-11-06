@@ -20,6 +20,8 @@ cd ../web && cp .env.example .env.local && npm i && npm run dev   # :3100
 
 Puertos locales: API de PuntoVenta/Cuentas `:3001` (necesita `TokenManagement:RsaPrivateKeyPem` en user-secrets; sin eso ARM rechaza el token), frontend de PuntoVenta `:3000`, API de ARM `:3002`, web de ARM `:3100`. No correr `npm run build` de la web con `npm run dev` encendido: comparten `.next`.
 
+Datos de demostración (solo local): `cd api && npx ts-node --transpile-only scripts/vitrina.ts <carpeta>` crea la empresa "vitrina", sirve un JWKS en `:4999` y deja tokens de gerente y comercial en `<carpeta>/vitrina-tokens.json`. Arranca la API con `CUENTAS_URL=http://localhost:4999 BARRIDO=off` y guarda el token en `localStorage.arm_token`.
+
 ## Documentación
 
 [Arquitectura](docs/ARCHITECTURE.md) · [Base de datos](docs/DATABASE.md) · [API](docs/API.md) · [IA](docs/AI_ARCHITECTURE.md) · [Seguridad](docs/SECURITY.md) · [Despliegue](docs/DEPLOYMENT.md) · [Hoja de ruta](docs/ROADMAP.md) · [Frente a Twenty](docs/COMPARATIVA_TWENTY.md) · [Frente a Salesforce](docs/COMPARATIVA_SALESFORCE.md) · [Cambios](CHANGELOG.md)

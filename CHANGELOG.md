@@ -6,6 +6,8 @@
 - Tareas con responsable y vencimiento, "Mis tareas" y aviso cuando una vence.
 - Automatizaciones: no asistió crea "Reagendar la demo", demo realizada crea "Enviar la propuesta y cerrar", ganado crea "Dar de alta al cliente en ARP"; al cerrar el lead se cancelan las automáticas pendientes.
 - Línea de tiempo del lead: etapas, notas, tareas y citas.
+- Nuevo diseño de la web: hoja clara, color solo cuando significa algo (mango: atención; menta: IA; uva: agenda; un color por etapa) y el resaltador como firma. Botones, campos, avisos con deshacer y confirmaciones comunes.
+- Pantallas nuevas: Leads (tabla y vistas), ficha del lead (notas, tareas y línea de tiempo), Mis tareas y búsqueda con Ctrl+K.
 - Tabla de leads con búsqueda por nombre, teléfono o dato extraído, filtros, orden, páginas y vistas guardadas.
 
 ## 0.3.0 (2026-11-05)

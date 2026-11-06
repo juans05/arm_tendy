@@ -72,6 +72,40 @@ describe('Miembros (e2e)', () => {
     expect(lista.body).toHaveLength(2);
   });
 
+  it('el equipo (solo nombres de los activos) lo ve cualquier miembro activo', async () => {
+    const g = await f.token({
+      userId: 'eq1',
+      tenant: 'equipo',
+      nombre: 'Gina',
+    });
+    const c = await f.token({
+      userId: 'eq2',
+      tenant: 'equipo',
+      nombre: 'Coco',
+    });
+    await http().get('/me').set('Authorization', `Bearer ${g}`).expect(200);
+    const yo = await http().get('/me').set('Authorization', `Bearer ${c}`);
+    await http()
+      .patch(`/miembros/${yo.body.miembro.id}`)
+      .set('Authorization', `Bearer ${g}`)
+      .send({ estado: 'activo' })
+      .expect(200);
+    const r = await http()
+      .get('/equipo')
+      .set('Authorization', `Bearer ${c}`)
+      .expect(200);
+    expect(r.body.map((m: { nombre: string }) => m.nombre).sort()).toEqual([
+      'Coco',
+      'Gina',
+    ]);
+    expect(Object.keys(r.body[0]).sort()).toEqual([
+      'id',
+      'nombre',
+      'rol',
+      'username',
+    ]);
+  });
+
   it('token sin arm → 403 SIN_ARM', async () => {
     const t = await f.token({
       userId: 'u3',

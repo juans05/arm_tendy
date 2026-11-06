@@ -30,3 +30,11 @@ export const IconoCerrar = base(<><path d="M6 6l12 12" /><path d="M18 6L6 18" />
 export const IconoSubir = base(<><path d="M12 16V4" /><path d="M7 9l5-5 5 5" /><path d="M5 20h14" /></>);
 export const IconoBasura = base(<><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M6 7l1 13h10l1-13" /></>);
 export const IconoInfo = base(<><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5" /><path d="M12 8h.01" /></>);
+export const IconoTabla = base(<><rect x="3.5" y="5" width="17" height="14" rx="2" /><path d="M3.5 10h17" /><path d="M9 10v9" /></>);
+export const IconoTareas = base(<><rect x="4" y="4" width="16" height="16" rx="3" /><path d="M8.5 12.2l2.4 2.4 4.6-5.1" /></>);
+export const IconoBuscar = base(<><circle cx="11" cy="11" r="6" /><path d="M20 20l-4.6-4.6" /></>);
+export const IconoCheck = base(<path d="M5 12.5l4.5 4.5L19 7.5" />);
+export const IconoAgregar = base(<><path d="M12 5v14" /><path d="M5 12h14" /></>);
+export const IconoNota = base(<><path d="M5 4h14v11l-5 5H5z" /><path d="M14 20v-5h5" /><path d="M8.5 9h7" /><path d="M8.5 12.5h4" /></>);
+export const IconoReloj = base(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>);
+export const IconoChat = base(<><path d="M4 18.5V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H7.5z" /></>);

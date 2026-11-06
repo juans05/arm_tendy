@@ -76,7 +76,7 @@ describe('ActividadService', () => {
     const nota = await actividad.crearNota(
       gerente,
       lead.id,
-      'Llamé al cliente. @ana revisa precios; @gere y @beto ojo, @nadie',
+      'Llamé al cliente. Revisa precios, @ana. @gere y @beto ojo, @nadie',
     );
     expect(nota.menciones).toEqual([ana.id]);
     expect(avisos).toEqual([

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Avatar from '@/components/Avatar';
+import { COLOR_ETAPA, Encabezado, Selector } from '@/components/ui';
 import { API, api, Linea, Miembro } from '@/lib/api';
 import { Etapa, ETAPAS, EventoBandeja, Lead } from '@/lib/bandeja';
 import { conectarEventos } from '@/lib/eventos';
@@ -99,34 +100,30 @@ export default function Embudo() {
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <header className="flex flex-wrap items-end gap-3 px-4 pb-3 pt-6 md:px-8">
-        <div className="mr-auto">
-          <h1 className="font-display text-3xl font-bold">Embudo</h1>
-          <p className="text-sm text-gris">Arrastra una tarjeta para moverla de etapa. Tócala para abrir el chat.</p>
-        </div>
-        <select value={lineaId} onChange={(e) => setLineaId(e.target.value)} aria-label="Línea" className="rounded-xl border border-linea bg-white px-3 py-2 text-sm">
+      <Encabezado titulo="Embudo" texto="Arrastra una tarjeta para moverla de etapa. Tócala para abrir la ficha.">
+        <Selector value={lineaId} onChange={(e) => setLineaId(e.target.value)} aria-label="Línea" className="w-auto">
           <option value="">Todas las líneas</option>
           {lineas.map((l) => (
             <option key={l.id} value={l.id}>
               {l.nombre}
             </option>
           ))}
-        </select>
+        </Selector>
         {gerente && (
-          <select value={duenoId} onChange={(e) => setDuenoId(e.target.value)} aria-label="Comercial" className="rounded-xl border border-linea bg-white px-3 py-2 text-sm">
+          <Selector value={duenoId} onChange={(e) => setDuenoId(e.target.value)} aria-label="Comercial" className="w-auto">
             <option value="">Todo el equipo</option>
             {equipo.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.nombre}
               </option>
             ))}
-          </select>
+          </Selector>
         )}
         <label className="flex items-center gap-2 text-sm text-gris">
           <input type="checkbox" checked={verCerrados} onChange={(e) => setVerCerrados(e.target.checked)} className="accent-tinta" />
           Archivados y descartados
         </label>
-      </header>
+      </Encabezado>
       {error && <p className="px-4 text-sm text-peligro md:px-8">{error}</p>}
 
       <div className="flex min-h-0 flex-1 snap-x gap-3 overflow-x-auto px-4 pb-4 md:px-8">
@@ -138,18 +135,19 @@ export default function Embudo() {
               key={etapa}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => soltar(e, etapa)}
-              className="flex w-72 shrink-0 snap-start flex-col rounded-2xl bg-white/60"
+              className="flex w-72 shrink-0 snap-start flex-col rounded-2xl border-t-[3px] bg-tinta/[0.03]"
+              style={{ borderTopColor: COLOR_ETAPA[etapa] }}
             >
               <div className="flex items-baseline gap-2 px-3 py-2.5">
-                <h2 className="font-semibold">{ETAPAS[etapa]}</h2>
-                <span className="text-sm text-gris">{items.length}</span>
+                <h2 className="font-display font-bold">{ETAPAS[etapa]}</h2>
+                <span className="tabular text-sm text-gris">{items.length}</span>
                 {etapa === 'ganado' && total > 0 && <span className="ml-auto text-sm font-semibold text-menta">{soles(total)}</span>}
               </div>
               <ul className="min-h-24 flex-1 space-y-2 overflow-y-auto px-2 pb-2">
                 {leads === null && <li className="h-20 animate-pulse rounded-xl bg-white" />}
                 {items.map((l) => (
                   <li key={l.id} draggable onDragStart={() => (arrastrado.current = l.id)} className="cursor-grab active:cursor-grabbing">
-                    <Link href={`/bandeja?c=${l.conversacionId}`} className="block rounded-xl border border-linea bg-white p-3 transition-shadow hover:shadow-md">
+                    <Link href={`/leads/${l.id}`} className="block rounded-xl border border-linea bg-hoja p-3 shadow-hoja transition hover:border-linea-2 hover:shadow-flota">
                       <div className="flex items-center gap-2.5">
                         <Avatar nombre={l.contacto?.nombre ?? '?'} semilla={l.contacto?.telefono ?? l.id} tam="size-8" />
                         <div className="min-w-0 flex-1">
@@ -160,7 +158,7 @@ export default function Embudo() {
                             {dias(l.etapaEn) === 0 ? 'hoy' : `hace ${dias(l.etapaEn)} d`}
                           </p>
                         </div>
-                        <span className="font-display text-sm font-bold" title="Interés">
+                        <span className="tabular font-display text-sm font-bold" title="Interés">
                           {l.puntaje}
                         </span>
                       </div>

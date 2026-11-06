@@ -27,6 +27,14 @@ export class MiembrosController {
     return this.miembros.listar(yo.tenant);
   }
 
+  /** Nombres de los compañeros activos: para @menciones y para mostrar quién hizo qué. */
+  @Get('equipo')
+  async equipo(@MiembroActual() yo: Miembro) {
+    return (await this.miembros.listar(yo.tenant))
+      .filter((m) => m.estado === 'activo')
+      .map(({ id, nombre, username, rol }) => ({ id, nombre, username, rol }));
+  }
+
   @Patch('miembros/:id')
   @Roles('gerente')
   actualizar(

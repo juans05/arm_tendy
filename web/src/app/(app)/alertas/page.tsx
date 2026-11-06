@@ -9,6 +9,9 @@ const TIPOS: { tipo: string; titulo: string; texto: string; gerente?: boolean }[
   { tipo: 'demo_pronto', titulo: 'Demo en 30 minutos', texto: 'Aviso antes de cada demo.' },
   { tipo: 'sin_atender', titulo: 'Cliente sin atender', texto: 'Un cliente escribió y nadie le responde.' },
   { tipo: 'seguimiento', titulo: 'Toca hacer seguimiento', texto: 'Cuando no hay plantilla, te avisamos para que escribas tú.' },
+  { tipo: 'mencion', titulo: 'Te mencionaron', texto: 'Un compañero escribió @tu-usuario en una nota.' },
+  { tipo: 'tarea_asignada', titulo: 'Tarea asignada', texto: 'Alguien te dejó una tarea en un lead.' },
+  { tipo: 'tarea_vencida', titulo: 'Tarea vencida', texto: 'Una tarea tuya pasó su fecha sin hacerse.' },
   { tipo: 'pregunta', titulo: 'La IA no supo algo', texto: 'Una pregunta que conviene agregar a la base de conocimiento.' },
   { tipo: 'resumen_diario', titulo: 'Resumen diario', texto: 'A las 8:00, cómo va el día.', gerente: true },
 ];

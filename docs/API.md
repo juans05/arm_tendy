@@ -9,6 +9,7 @@ Base: `https://<api>` (local `http://localhost:3002`). Todas las rutas piden `Au
 | `GET /health` | Estado de la API y la base |
 | `GET /me` | Miembro y empresa de la sesión (`SIN_ARM`, `MIEMBRO_PENDIENTE`, `MIEMBRO_INACTIVO`) |
 | `GET /miembros` · `PATCH /miembros/:id` | Equipo (G) |
+| `GET /equipo` | Compañeros activos: id, nombre, usuario y rol (para @menciones) |
 | `GET/PUT /miembros/:id/horarios` | Horario semanal (el comercial edita el suyo) |
 | `GET /lineas` · `POST` · `PATCH /lineas/:id` | Líneas de producto (escribir: G) |
 | `GET /canales` · `POST /canales/whatsapp/conectar` · `conectar-existente` · `GET /canales/whatsapp/config` | WhatsApp (G) |

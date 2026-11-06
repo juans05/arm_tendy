@@ -47,7 +47,7 @@ export type ItemLinea =
       'id' | 'titulo' | 'estado' | 'miembroId' | 'fin'
     >);
 
-const MENCION = /@([\w.-]+)/g;
+const MENCION = /@([\w-]+(?:\.[\w-]+)*)/g;
 
 /** Lo que el equipo hace sobre un lead además del chat: notas, tareas y vistas de la tabla. */
 @Injectable()

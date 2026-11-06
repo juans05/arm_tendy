@@ -1,22 +1,37 @@
 @import "tailwindcss";
 
-/* ARM: tinta azul profunda + mango. La tinta ordena, el mango señala lo que pide atención. */
+/*
+ * ARM: hoja blanca, tinta casi negra y color solo cuando significa algo.
+ *   mango  = pide atención de una persona (sin leer, vencido, la acción principal)
+ *   menta  = lo hizo la IA
+ *   uva    = agenda y demos
+ *   etapas = un color fijo por etapa, el mismo en tabla, tablero y línea de tiempo
+ * La firma visual es el trazo de resaltador mango (.marcador).
+ */
 @theme {
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
 
-  --color-tinta: #1d2645;
-  --color-tinta-2: #2b3660;
-  --color-papel: #f4f6fb;
-  --color-linea: #dfe4f0;
-  --color-gris: #67708a;
+  --color-tinta: #151a2d;
+  --color-tinta-2: #2a3150;
+  --color-papel: #f4f5f8;
+  --color-hoja: #ffffff;
+  --color-linea: #e3e6ee;
+  --color-linea-2: #cfd4e1;
+  --color-gris: #5f6680;
+  --color-gris-2: #8a90a6;
   --color-mango: #ffb627;
-  --color-mango-suave: #fff1d1;
-  --color-menta: #1fae9f;
-  --color-menta-suave: #dcf5f2;
-  --color-uva: #6c55e8;
-  --color-uva-suave: #ebe7fd;
-  --color-peligro: #d6453d;
+  --color-mango-oscuro: #9a5b00;
+  --color-mango-suave: #fff3d6;
+  --color-menta: #12917f;
+  --color-menta-suave: #ddf3ef;
+  --color-uva: #5b45d6;
+  --color-uva-suave: #ebe8fc;
+  --color-peligro: #c7362e;
+  --color-peligro-suave: #fbe6e4;
+
+  --shadow-hoja: 0 1px 0 rgb(21 26 45 / 0.04), 0 1px 2px rgb(21 26 45 / 0.06);
+  --shadow-flota: 0 12px 32px -8px rgb(21 26 45 / 0.28), 0 2px 6px rgb(21 26 45 / 0.08);
 }
 
 body {
@@ -29,12 +44,42 @@ body {
   outline-offset: 2px;
 }
 
-/* Un solo momento de movimiento: el mensaje nuevo entra al chat. */
+/* Trazo de resaltador: un poco inclinado y con bordes irregulares, como un plumón sobre papel. */
+.marcador {
+  position: relative;
+  isolation: isolate;
+}
+.marcador::before {
+  content: "";
+  position: absolute;
+  inset: 22% -5px 6% -5px;
+  z-index: -1;
+  background: var(--color-mango);
+  border-radius: 3px 10px 4px 12px / 8px 4px 10px 3px;
+  transform: rotate(-1.2deg) skewX(-6deg);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un solo movimiento por acción: lo nuevo entra. */
 @keyframes entra {
   from { opacity: 0; transform: translateY(6px) scale(0.98); }
   to { opacity: 1; transform: none; }
 }
 .entra { animation: entra 180ms ease-out; }
+
+@keyframes sube {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.aviso { animation: sube 200ms cubic-bezier(.2,.9,.3,1.2); }
+
+dialog::backdrop {
+  background: rgb(21 26 45 / 0.45);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .entra { animation: none; }
+  .entra, .aviso { animation: none; }
 }
