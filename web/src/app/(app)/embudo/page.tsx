@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Avatar from '@/components/Avatar';
-import { COLOR_ETAPA, Encabezado, Selector } from '@/components/ui';
+import { ChipFiltro as Chip, clasesFiltro as filtro, COLOR_ETAPA, Encabezado } from '@/components/ui';
 import { API, api, Linea, Miembro } from '@/lib/api';
 import { Etapa, ETAPAS, EventoBandeja, Lead } from '@/lib/bandeja';
 import { conectarEventos } from '@/lib/eventos';
@@ -30,6 +30,12 @@ export default function Embudo() {
   const [lineaId, setLineaId] = useState('');
   const [duenoId, setDuenoId] = useState('');
   const [verCerrados, setVerCerrados] = useState(false);
+  // Filtros que se aplican aquí mismo sobre los leads ya cargados (el tablero los trae todos).
+  const [buscar, setBuscar] = useState('');
+  const [llegaron, setLlegaron] = useState(''); // '' | '1' | '7' | '30': creados en los últimos N días
+  const [soloCalificados, setSoloCalificados] = useState(false);
+  const [soloAnuncio, setSoloAnuncio] = useState(false);
+  const [soloSinDueno, setSoloSinDueno] = useState(false);
   const [error, setError] = useState('');
   const [pendiente, setPendiente] = useState<{ lead: LeadConContacto; etapa: Etapa } | null>(null);
   const arrastrado = useRef<string | null>(null);
@@ -94,36 +100,81 @@ export default function Embudo() {
   const columnas = verCerrados ? [...COLUMNAS, ...CERRADAS] : COLUMNAS;
   const porEtapa = useMemo(() => {
     const m = new Map<Etapa, LeadConContacto[]>();
-    for (const l of leads ?? []) m.set(l.etapa, [...(m.get(l.etapa) ?? []), l]);
+    const texto = buscar.trim().toLowerCase();
+    const digitos = texto.replace(/\D/g, '');
+    for (const l of leads ?? []) {
+      if (texto && !(l.contacto?.nombre.toLowerCase().includes(texto) || (digitos && l.contacto?.telefono.includes(digitos)))) continue;
+      if (llegaron && dias(l.createdAt) >= Number(llegaron)) continue;
+      if (soloCalificados && !l.calificado) continue;
+      if (soloAnuncio && !l.referral) continue;
+      if (soloSinDueno && l.duenoId) continue;
+      m.set(l.etapa, [...(m.get(l.etapa) ?? []), l]);
+    }
     return m;
-  }, [leads]);
+  }, [leads, buscar, llegaron, soloCalificados, soloAnuncio, soloSinDueno]);
+
+  const hayFiltros = !!(lineaId || duenoId || buscar || llegaron || soloCalificados || soloAnuncio || soloSinDueno || verCerrados);
+  function quitarFiltros() {
+    setLineaId('');
+    setDuenoId('');
+    setBuscar('');
+    setLlegaron('');
+    setSoloCalificados(false);
+    setSoloAnuncio(false);
+    setSoloSinDueno(false);
+    setVerCerrados(false);
+  }
 
   return (
     <section className="flex h-full min-h-0 flex-col">
-      <Encabezado titulo="Embudo" texto="Arrastra una tarjeta para moverla de etapa. Tócala para abrir la ficha.">
-        <Selector value={lineaId} onChange={(e) => setLineaId(e.target.value)} aria-label="Línea" className="w-auto">
-          <option value="">Todas las líneas</option>
-          {lineas.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.nombre}
-            </option>
-          ))}
-        </Selector>
+      <Encabezado titulo="Embudo" texto="Arrastra una tarjeta para moverla de etapa. Tócala para abrir la ficha." />
+      <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3 md:px-8">
+        <input
+          type="search"
+          value={buscar}
+          onChange={(e) => setBuscar(e.target.value)}
+          placeholder="Buscar nombre o número"
+          aria-label="Buscar"
+          className={`${filtro(!!buscar)} w-48 cursor-text placeholder:text-gris-2`}
+        />
+        {lineas.length > 1 && (
+          <select value={lineaId} onChange={(e) => setLineaId(e.target.value)} aria-label="Línea" className={filtro(!!lineaId)}>
+            <option value="">Todas las líneas</option>
+            {lineas.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.nombre}
+              </option>
+            ))}
+          </select>
+        )}
         {gerente && (
-          <Selector value={duenoId} onChange={(e) => setDuenoId(e.target.value)} aria-label="Comercial" className="w-auto">
+          <select value={duenoId} onChange={(e) => setDuenoId(e.target.value)} aria-label="Comercial" className={filtro(!!duenoId)}>
             <option value="">Todo el equipo</option>
             {equipo.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.nombre}
               </option>
             ))}
-          </Selector>
+          </select>
         )}
-        <label className="flex items-center gap-2 text-sm text-gris">
-          <input type="checkbox" checked={verCerrados} onChange={(e) => setVerCerrados(e.target.checked)} className="accent-tinta" />
-          Archivados y descartados
-        </label>
-      </Encabezado>
+        <select value={llegaron} onChange={(e) => setLlegaron(e.target.value)} aria-label="Llegaron" className={filtro(!!llegaron)}>
+          <option value="">Cualquier fecha</option>
+          <option value="1">Llegaron hoy</option>
+          <option value="7">Últimos 7 días</option>
+          <option value="30">Últimos 30 días</option>
+        </select>
+        <Chip activo={soloCalificados} onClick={() => setSoloCalificados((v) => !v)}>Calificados</Chip>
+        <Chip activo={soloAnuncio} onClick={() => setSoloAnuncio((v) => !v)}>De anuncio</Chip>
+        {gerente && (
+          <Chip activo={soloSinDueno} onClick={() => setSoloSinDueno((v) => !v)}>Sin comercial</Chip>
+        )}
+        <Chip activo={verCerrados} onClick={() => setVerCerrados((v) => !v)}>Archivados y descartados</Chip>
+        {hayFiltros && (
+          <button type="button" onClick={quitarFiltros} className="h-7 px-2 text-xs font-semibold text-gris underline-offset-2 hover:text-tinta hover:underline">
+            Quitar filtros
+          </button>
+        )}
+      </div>
       {error && <p className="px-4 text-sm text-peligro md:px-8">{error}</p>}
 
       <div className="flex min-h-0 flex-1 snap-x gap-3 overflow-x-auto px-4 pb-4 md:px-8">

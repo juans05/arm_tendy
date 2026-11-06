@@ -5,7 +5,7 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import Avatar from '@/components/Avatar';
 import { useAvisos } from '@/components/Avisos';
 import { IconoBuscar, IconoCerrar, IconoTabla } from '@/components/Iconos';
-import { Boton, Campo, ChipEtapa, COLOR_ETAPA, Encabezado, Puntaje, Selector, Vacio } from '@/components/ui';
+import { Boton, Campo, ChipEtapa, ChipFiltro, clasesFiltro, COLOR_ETAPA, Encabezado, Puntaje, SelectorFiltro, Vacio } from '@/components/ui';
 import { api, Linea, Miembro } from '@/lib/api';
 import { aQuery, Filtros, LeadFila, Orden, Vista } from '@/lib/actividad';
 import { Etapa, ETAPAS } from '@/lib/bandeja';
@@ -25,6 +25,40 @@ const hace = (iso: string) => {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
   return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d} d`;
 };
+// Las 10 etapas en un solo botón: "Etapa" abre la lista con casillas y muestra cuántas van elegidas.
+function MenuEtapas({ elegidas, alternar, limpiar }: { elegidas: Etapa[]; alternar: (e: Etapa) => void; limpiar: () => void }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const cerrar = (ev: MouseEvent) => {
+      if (ref.current?.open && !ref.current.contains(ev.target as Node)) ref.current.open = false;
+    };
+    document.addEventListener('click', cerrar);
+    return () => document.removeEventListener('click', cerrar);
+  }, []);
+  const titulo = elegidas.length === 0 ? 'Todas las etapas' : elegidas.length === 1 ? ETAPAS[elegidas[0]] : `Etapa · ${elegidas.length}`;
+  return (
+    <details ref={ref} className="relative">
+      <summary className={`inline-flex list-none items-center gap-1 [&::-webkit-details-marker]:hidden ${clasesFiltro(elegidas.length > 0)}`}>
+        {titulo} <span aria-hidden>▾</span>
+      </summary>
+      <div className="absolute left-0 z-20 mt-1 w-56 rounded-xl border border-linea bg-hoja p-1.5 shadow-flota">
+        {ETAPAS_FILTRO.map((e) => (
+          <label key={e} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-tinta/5">
+            <input type="checkbox" checked={elegidas.includes(e)} onChange={() => alternar(e)} className="size-4 accent-tinta" />
+            <span className="size-2 rounded-full" style={{ background: COLOR_ETAPA[e] }} />
+            {ETAPAS[e]}
+          </label>
+        ))}
+        {elegidas.length > 0 && (
+          <button type="button" onClick={limpiar} className="mt-1 w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold text-gris hover:bg-tinta/5 hover:text-tinta">
+            Ver todas
+          </button>
+        )}
+      </div>
+    </details>
+  );
+}
+
 const iguales = (a: Filtros, b: Filtros) => JSON.stringify({ ...a, q: a.q || undefined }) === JSON.stringify({ ...b, q: b.q || undefined });
 
 export default function Leads() {
@@ -129,69 +163,55 @@ export default function Leads() {
       </div>
 
       {/* Filtros */}
-      <div className="space-y-3 px-4 py-4 md:px-8">
-        <div className="flex flex-wrap gap-2">
-          <label className="relative min-w-56 flex-1">
-            <IconoBuscar className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gris" />
-            <Campo value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, teléfono, RUC o dato del cliente" aria-label="Buscar leads" className="pl-9" />
-          </label>
-          <Selector value={filtros.lineaId ?? ''} onChange={(e) => cambiar({ lineaId: e.target.value || undefined })} aria-label="Línea" className="w-auto">
+      <div className="flex flex-wrap items-center gap-1.5 px-4 py-3 md:px-8">
+        <label className="relative">
+          <IconoBuscar className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-gris" />
+          <input
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar nombre, teléfono, RUC…"
+            aria-label="Buscar leads"
+            className={`${clasesFiltro(!!q)} w-60 cursor-text pl-7 placeholder:font-normal placeholder:text-gris-2`}
+          />
+        </label>
+        <MenuEtapas elegidas={filtros.etapas ?? []} alternar={alternarEtapa} limpiar={() => cambiar({ etapas: undefined })} />
+        {lineas.length > 1 && (
+          <SelectorFiltro activo={!!filtros.lineaId} value={filtros.lineaId ?? ''} onChange={(e) => cambiar({ lineaId: e.target.value || undefined })} aria-label="Línea">
             <option value="">Todas las líneas</option>
             {lineas.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.nombre}
               </option>
             ))}
-          </Selector>
-          <Selector value={filtros.duenoId ?? ''} onChange={(e) => cambiar({ duenoId: e.target.value || undefined })} aria-label="Dueño" className="w-auto">
-            <option value="">{gerente ? 'Todo el equipo' : 'Míos y sin dueño'}</option>
-            {!gerente && <option value={miembro.id}>Solo míos</option>}
-            <option value="sin">Sin dueño</option>
-            {equipo.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nombre}
-              </option>
-            ))}
-          </Selector>
-          <Selector value={filtros.orden ?? 'reciente'} onChange={(e) => cambiar({ orden: e.target.value as Orden })} aria-label="Orden" className="w-auto">
-            {ORDENES.map(([v, t]) => (
-              <option key={v} value={v}>
-                {t}
-              </option>
-            ))}
-          </Selector>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {ETAPAS_FILTRO.map((e) => {
-            const sel = filtros.etapas?.includes(e);
-            return (
-              <button
-                key={e}
-                onClick={() => alternarEtapa(e)}
-                aria-pressed={sel}
-                className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition ${sel ? 'border-tinta bg-tinta text-white' : 'border-linea bg-hoja text-gris hover:border-linea-2 hover:text-tinta'}`}
-              >
-                <span className="size-1.5 rounded-full" style={{ background: sel ? '#fff' : COLOR_ETAPA[e] }} />
-                {ETAPAS[e]}
-              </button>
-            );
-          })}
-          <button
-            onClick={() => cambiar({ calificado: filtros.calificado ? undefined : true })}
-            aria-pressed={!!filtros.calificado}
-            className={`inline-flex h-7 items-center rounded-full border px-2.5 text-xs font-semibold transition ${filtros.calificado ? 'border-menta bg-menta text-white' : 'border-linea bg-hoja text-gris hover:text-tinta'}`}
-          >
-            Calificados por la IA
+          </SelectorFiltro>
+        )}
+        <SelectorFiltro activo={!!filtros.duenoId} value={filtros.duenoId ?? ''} onChange={(e) => cambiar({ duenoId: e.target.value || undefined })} aria-label="Dueño">
+          <option value="">{gerente ? 'Todo el equipo' : 'Míos y sin dueño'}</option>
+          {!gerente && <option value={miembro.id}>Solo míos</option>}
+          <option value="sin">Sin dueño</option>
+          {equipo.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nombre}
+            </option>
+          ))}
+        </SelectorFiltro>
+        <ChipFiltro activo={!!filtros.calificado} onClick={() => cambiar({ calificado: filtros.calificado ? undefined : true })}>
+          Calificados por la IA
+        </ChipFiltro>
+        {hayFiltros && (
+          <button onClick={() => aplicarVista(null)} className="px-1 text-xs font-semibold text-gris underline decoration-linea-2 underline-offset-4 hover:text-tinta">
+            Quitar filtros
           </button>
-          {hayFiltros && (
-            <button
-              onClick={() => aplicarVista(null)}
-              className="ml-1 text-xs font-semibold text-gris underline decoration-linea-2 underline-offset-4 hover:text-tinta"
-            >
-              Quitar filtros
-            </button>
-          )}
-        </div>
+        )}
+        {/* El orden no filtra: va aparte, a la derecha. */}
+        <SelectorFiltro activo={false} value={filtros.orden ?? 'reciente'} onChange={(e) => cambiar({ orden: e.target.value as Orden })} aria-label="Orden" className="ml-auto">
+          {ORDENES.map(([v, t]) => (
+            <option key={v} value={v}>
+              ↕ {t}
+            </option>
+          ))}
+        </SelectorFiltro>
       </div>
 
       {/* Resultados */}

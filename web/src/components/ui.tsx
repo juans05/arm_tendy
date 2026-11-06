@@ -62,6 +62,24 @@ export function Selector({ className = '', ...p }: SelectHTMLAttributes<HTMLSele
   return <select {...p} className={`${CAMPO} h-10 cursor-pointer pr-8 ${/w-/.test(className) ? '' : 'w-full'} ${className}`} />;
 }
 
+// Filtros compactos (píldoras de 28 px): caben en una fila; el activo se pinta oscuro.
+export const clasesFiltro = (activo: boolean) =>
+  `h-7 cursor-pointer rounded-full border px-2.5 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-tinta/30 ${
+    activo ? 'border-tinta bg-tinta text-white' : 'border-linea bg-hoja text-gris hover:border-linea-2 hover:text-tinta'
+  }`;
+
+export function ChipFiltro({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={activo} className={`inline-flex items-center ${clasesFiltro(activo)}`}>
+      {children}
+    </button>
+  );
+}
+
+export function SelectorFiltro({ activo, className = '', ...p }: SelectHTMLAttributes<HTMLSelectElement> & { activo: boolean }) {
+  return <select {...p} className={`${clasesFiltro(activo)} ${className}`} />;
+}
+
 // Color fijo por etapa: el mismo punto aparece en la tabla, el tablero y la línea de tiempo.
 export const COLOR_ETAPA: Record<Etapa, string> = {
   nuevo: '#5f6680',
