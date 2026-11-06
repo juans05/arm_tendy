@@ -20,7 +20,7 @@ export default function Plantillas({ conversacionId, onEnviado }: { conversacion
   const [enviando, setEnviando] = useState(false);
 
   async function abrir() {
-    const r = await api<Plantilla[]>('/plantillas');
+    const r = await api<Plantilla[]>(`/conversaciones/${conversacionId}/plantillas`);
     if (!r.data) return setError(r.message ?? 'No se pudieron cargar las plantillas');
     setLista(r.data);
   }

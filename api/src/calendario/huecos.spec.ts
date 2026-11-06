@@ -72,4 +72,26 @@ describe('huecos', () => {
   it('una demo más larga que el turno no entra', () => {
     expect(huecos({ ...base, duracionMin: 150 })).toEqual([]);
   });
+
+  it('con horario de verano no se salta el día del cambio', () => {
+    // Nueva York adelanta la hora el domingo 2026-03-08 (ese día dura 23 h).
+    const r = huecos({
+      ...base,
+      zona: 'America/New_York',
+      duracionMin: 60,
+      pasoMin: 60,
+      horarios: [0, 1, 2, 3, 4, 5, 6].map((dia) => ({
+        dia,
+        desde: '09:00:00',
+        hasta: '10:00:00',
+      })),
+      desde: new Date('2026-03-08T04:30:00Z'), // sábado 7, 23:30 en Nueva York
+      hasta: new Date('2026-03-10T04:30:00Z'),
+      ahora: new Date('2026-03-01T00:00:00Z'),
+    });
+    expect(iso(r)).toEqual([
+      '2026-03-08T13:00:00.000Z',
+      '2026-03-09T13:00:00.000Z',
+    ]);
+  });
 });

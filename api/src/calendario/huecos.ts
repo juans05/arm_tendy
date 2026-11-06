@@ -51,6 +51,11 @@ export function diaLocal(instante: Date, zona: string) {
   return { fecha, dia: new Date(Date.UTC(y, m - 1, d)).getUTCDay() };
 }
 
+const diaSiguiente = (fecha: string) => {
+  const [y, m, d] = fecha.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+};
+
 const minutos = (h: string) => {
   const [hh, mm] = h.split(':').map(Number);
   return hh * 60 + mm;
@@ -75,9 +80,13 @@ export function huecos(o: {
   const libres: Date[] = [];
   const minimo = o.ahora.getTime() + o.avisoMin * MIN;
   const margen = o.margenMin * MIN;
-  // Se recorre día por día (hora local) desde "desde" hasta "hasta".
-  for (let t = o.desde.getTime(); t < o.hasta.getTime(); t += 24 * 60 * MIN) {
-    const { fecha, dia } = diaLocal(new Date(t), o.zona);
+  // Se recorre por fecha local (no de 24 en 24 h: con horario de verano hay días de 23 y 25 h).
+  for (
+    let fecha = diaLocal(o.desde, o.zona).fecha;
+    aUtc(fecha, '00:00', o.zona) < o.hasta;
+    fecha = diaSiguiente(fecha)
+  ) {
+    const { dia } = diaLocal(aUtc(fecha, '12:00', o.zona), o.zona);
     for (const h of o.horarios.filter((x) => x.dia === dia)) {
       for (
         let m = minutos(h.desde);

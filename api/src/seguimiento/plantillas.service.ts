@@ -43,11 +43,33 @@ export class PlantillasService {
   ) {}
 
   // ponytail: se consulta a Meta cada vez; cachear unos minutos si la lista se abre mucho.
-  async listar(tenant: string): Promise<Plantilla[]> {
-    const numero = await this.db
-      .getRepository(NumeroWhatsapp)
-      .findOneBy({ tenant, activo: true });
-    if (!numero) return [];
+  /** Plantillas del número por el que habla esta conversación (cada número puede tener su propia cuenta). */
+  async listar(m: Miembro, conversacionId: string): Promise<Plantilla[]> {
+    return this.deNumero((await this.conversacion(m, conversacionId)).numero!);
+  }
+
+  private async conversacion(m: Miembro, id: string) {
+    const conv = await this.db.getRepository(Conversacion).findOne({
+      where: { id, tenant: m.tenant },
+      relations: { numero: true, contacto: true },
+    });
+    if (!conv) throw new NotFoundException('Conversación no encontrada');
+    if (m.rol !== 'gerente') {
+      const [l] = await this.db.query(
+        'SELECT dueno_id FROM leads WHERE conversacion_id = $1',
+        [conv.id],
+      );
+      if (l?.dueno_id && l.dueno_id !== m.id)
+        throw new NotFoundException('Conversación no encontrada');
+    }
+    if (!conv.numero!.activo)
+      throw new ConflictException(
+        'El número de esta conversación ya no está conectado',
+      );
+    return conv;
+  }
+
+  private async deNumero(numero: NumeroWhatsapp): Promise<Plantilla[]> {
     const r = await this.meta.llamar<{ data?: PlantillaMeta[] }>(
       'GET',
       `/${numero.wabaId}/message_templates`,
@@ -81,23 +103,11 @@ export class PlantillasService {
     idioma: string,
     parametros: string[],
   ): Promise<Mensaje> {
-    const conv = await this.db.getRepository(Conversacion).findOne({
-      where: { id: conversacionId, tenant: m.tenant },
-      relations: { numero: true, contacto: true },
-    });
-    if (!conv) throw new NotFoundException('Conversación no encontrada');
-    if (m.rol !== 'gerente') {
-      const [l] = await this.db.query(
-        'SELECT dueno_id FROM leads WHERE conversacion_id = $1',
-        [conv.id],
-      );
-      if (l?.dueno_id && l.dueno_id !== m.id)
-        throw new NotFoundException('Conversación no encontrada');
-    }
+    const conv = await this.conversacion(m, conversacionId);
     if (conv.contacto!.noContactar)
       throw new ConflictException('El cliente pidió no ser contactado');
 
-    const plantilla = (await this.listar(m.tenant)).find(
+    const plantilla = (await this.deNumero(conv.numero!)).find(
       (p) => p.nombre === nombre && p.idioma === idioma,
     );
     if (!plantilla) throw new BadRequestException('Plantilla no encontrada');

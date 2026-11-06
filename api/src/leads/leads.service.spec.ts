@@ -203,4 +203,17 @@ describe('LeadsService', () => {
         .countBy({ leadId: viejo.id, a: 'en_conversacion' }),
     ).toBe(0);
   });
+
+  it('si dos comerciales toman a la vez un lead sin dueño, solo uno se lo queda', async () => {
+    const { lead } = await nuevoLead();
+    await leads.actualizar(ana, lead.id, { duenoId: ana.id });
+    // Beto leyó el lead antes de que Ana lo tomara.
+    jest.spyOn(leads, 'uno').mockResolvedValueOnce({ ...lead, duenoId: null });
+    await expect(
+      leads.actualizar(beto, lead.id, { duenoId: beto.id }),
+    ).rejects.toThrow('Otro comercial ya tomó este lead');
+    expect(
+      (await db.getRepository(Lead).findOneByOrFail({ id: lead.id })).duenoId,
+    ).toBe(ana.id);
+  });
 });

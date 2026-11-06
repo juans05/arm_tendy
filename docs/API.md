@@ -16,7 +16,7 @@ Base: `https://<api>` (local `http://localhost:3002`). Todas las rutas piden `Au
 | `GET /conversaciones` | Bandeja (200 más recientes) |
 | `GET/POST /conversaciones/:id/mensajes` | Leer y responder (texto libre solo dentro de 24 h: `FUERA_DE_VENTANA`) |
 | `POST /conversaciones/:id/plantilla` | Enviar plantilla aprobada `{ nombre, idioma, parametros }` |
-| `GET /plantillas` | Plantillas aprobadas en Meta |
+| `GET /conversaciones/:id/plantillas` | Plantillas aprobadas en Meta del número de esa conversación |
 | `GET /mensajes/:id/media` | Archivo del mensaje, descargado de Meta al vuelo |
 | `POST /conversaciones/:id/devolver-ia` | Devuelve la conversación a la IA |
 | `GET /conversaciones/:id/lead` · `/ejecuciones` | Lead y trazas de la IA |

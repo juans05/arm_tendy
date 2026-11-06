@@ -62,7 +62,8 @@ describe('PlantillasService', () => {
   });
 
   it('lista las plantillas aprobadas con su texto y número de variables', async () => {
-    const r = await svc.listar('t');
+    const conv = await db.getRepository(Conversacion).findOneByOrFail({});
+    const r = await svc.listar(ana, conv.id);
     expect(llamadas[0]).toMatchObject({
       metodo: 'GET',
       ruta: '/w-ph1/message_templates',
@@ -118,5 +119,23 @@ describe('PlantillasService', () => {
     await expect(
       svc.enviar(ana, conv.id, 'retomamos', 'es', ['Rosa']),
     ).rejects.toThrow('no ser contactado');
+  });
+
+  it('con dos números, lista y valida las plantillas del número de la conversación', async () => {
+    await crearNumero(db, 't', 'ph2');
+    const eventos = new EventosService();
+    await new EntrantesService(db, eventos).procesar(
+      payloadTexto('ph2', 'w2', 'Hola', '51922'),
+    );
+    const conv = await db
+      .getRepository(Conversacion)
+      .findOneOrFail({ where: { numero: { phoneNumberId: 'ph2' } } });
+    await svc.listar(ana, conv.id);
+    await svc.enviar(ana, conv.id, 'retomamos', 'es', ['Rosa']);
+    const gets = llamadas.filter((l) => l.metodo === 'GET').map((l) => l.ruta);
+    expect(gets).toEqual([
+      '/w-ph2/message_templates',
+      '/w-ph2/message_templates',
+    ]);
   });
 });

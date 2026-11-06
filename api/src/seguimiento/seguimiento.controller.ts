@@ -15,9 +15,9 @@ import { PlantillasService } from './plantillas.service';
 export class SeguimientoController {
   constructor(private readonly plantillas: PlantillasService) {}
 
-  @Get('plantillas')
-  listar(@MiembroActual() m: Miembro) {
-    return this.plantillas.listar(m.tenant);
+  @Get('conversaciones/:id/plantillas')
+  listar(@MiembroActual() m: Miembro, @Param('id', ParseUUIDPipe) id: string) {
+    return this.plantillas.listar(m, id);
   }
 
   @Post('conversaciones/:id/plantilla')

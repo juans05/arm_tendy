@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -157,9 +158,20 @@ export class LeadsService {
         throw new BadRequestException('Indica el motivo');
     }
 
+    // Un comercial que se lo toma solo gana si sigue sin dueño (otro pudo tomarlo entretanto).
+    const seLoTomaSinDueno = 'duenoId' in cambios && m.rol !== 'gerente';
     await this.db.transaction(async (em) => {
-      if (Object.keys(cambios).length)
-        await em.update(Lead, { id: lead.id }, cambios);
+      if (Object.keys(cambios).length) {
+        const r = await em.update(
+          Lead,
+          seLoTomaSinDueno
+            ? { id: lead.id, duenoId: IsNull() }
+            : { id: lead.id },
+          cambios,
+        );
+        if (!r.affected)
+          throw new ConflictException('Otro comercial ya tomó este lead');
+      }
       if (c.etapa) await anotarEtapa(em, lead, c.etapa, m.id);
     });
     return this.emitir(lead.id, lead.conversacionId, m.tenant);
