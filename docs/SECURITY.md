@@ -8,7 +8,7 @@
 | Acceso a otra empresa | Toda consulta filtra por `tenant`; pruebas e2e de aislamiento en bandeja, agente y leads |
 | Escalada de rol | Guards globales en orden: límite → token → miembro activo → rol. Miembros desactivados pierden el SSE en el siguiente chequeo |
 | Webhook falso | Firma HMAC `x-hub-signature-256` con `META_APP_SECRET`; idempotencia por `wa_message_id` |
-| Tokens de Meta en la base | Cifrados con AES-256-GCM (`FIELD_ENCRYPTION_KEY`) |
+| Tokens de Meta en la base | Cifrados con AES-256-GCM (`FIELD_ENCRYPTION_KEY`): WhatsApp y Meta Ads; el de anuncios nunca sale por la API |
 | Abuso de la API | `@nestjs/throttler`: 300 peticiones por minuto e IP, contadas en Redis para todas las instancias (el webhook queda fuera; lo protege la firma) |
 | Cabeceras | `helmet` en la API; CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` y `Permissions-Policy` en la web |
 | Inyección en la IA | Reglas en el mensaje de sistema, contenido del cliente como datos, salida validada contra lista blanca |

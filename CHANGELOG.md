@@ -2,6 +2,8 @@
 
 ## 0.3.0 (2026-11-05)
 
+- Meta Ads: el gerente conecta la cuenta publicitaria en Canales y el panel muestra lo invertido, el costo por lead, demo y venta, y el retorno de cada anuncio.
+- IA con Gemini (principal `gemini-3.5-flash`, respaldo `gemini-flash-lite-latest`, embeddings `gemini-embedding-001`).
 - NestJS 11 (Express 5) y multer 2.5: se cierran los avisos altos de `npm audit`.
 - Varias instancias: tiempo real por Redis pub/sub y límite de peticiones contado en Redis.
 - Un lead sin dueño no lo pueden tomar dos comerciales a la vez.

@@ -18,6 +18,7 @@ Postgres 16 con `pgvector` y `btree_gist`. Esquema por migraciones TypeORM en `a
 | `ejecuciones_ia` | Traza de cada llamada a la IA: modelo, tokens, tiempo, salida o error |
 | `horarios`, `bloqueos`, `citas` | Calendario; `citas_sin_cruce` impide citas agendadas superpuestas del mismo miembro |
 | `alertas` | Campanita por miembro |
+| `cuentas_anuncios` | Cuenta publicitaria de Meta por empresa; token cifrado. Los leads se cruzan por `referral->>'sourceId'` (índice `IDX_leads_anuncio`) |
 
 ## Respaldo
 

@@ -9,6 +9,7 @@ import { DatabaseConfig } from './config/database.config';
 import { HealthController } from './health/health.controller';
 import { AgenteModule } from './agente/agente.module';
 import { AlertasModule } from './alertas/alertas.module';
+import { AnunciosModule } from './anuncios/anuncios.module';
 import { CalendarioModule } from './calendario/calendario.module';
 import { LeadsModule } from './leads/leads.module';
 import { ReportesModule } from './reportes/reportes.module';
@@ -52,6 +53,7 @@ const limite =
     CalendarioModule,
     SeguimientoModule,
     ReportesModule,
+    AnunciosModule,
   ],
   controllers: [HealthController],
   // El orden importa: primero el límite de peticiones, luego el token, luego el miembro, luego el rol.

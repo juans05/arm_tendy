@@ -30,5 +30,6 @@ Base: `https://<api>` (local `http://localhost:3002`). Todas las rutas piden `Au
 | `GET /citas?desde&hasta` · `POST /citas` · `PATCH /citas/:id` · `POST /citas/:id/estado` | Citas; cruce → 409 |
 | `GET /bloqueos?desde&hasta` · `POST /bloqueos` · `DELETE /bloqueos/:id` | Bloqueos de agenda |
 | `GET /alertas` · `POST /alertas/leidas` · `GET/PUT /alertas/preferencias` | Alertas del miembro |
-| `GET /panel/kpis?desde&hasta&lineaId&duenoId&origen` | KPIs del período y del anterior (G) |
+| `GET /panel/kpis?desde&hasta&lineaId&duenoId&origen` | KPIs del período y del anterior, y `anuncios`: gasto de Meta Ads con costo por lead, demo y venta por anuncio (G) |
+| `GET/PUT/DELETE /anuncios/cuenta` | Cuenta publicitaria de Meta `{ cuentaId, token }`; el token se valida con Meta y nunca se devuelve (G) |
 | `GET /panel/excel?…` | Leads del período en Excel (G) |

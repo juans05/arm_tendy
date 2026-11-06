@@ -13,6 +13,8 @@ Un solo cliente compatible con la API de OpenAI (`api/src/ia/ia.service.ts`):
 
 Sin `AI_BASE_URL` ARM funciona como bandeja humana: no se crea la cola del agente.
 
+Configuración probada (Gemini directo, endpoint compatible con OpenAI `https://generativelanguage.googleapis.com/v1beta/openai/`): `AI_MODEL=gemini-3.5-flash`, `AI_FALLBACK_MODEL=gemini-flash-lite-latest`, `AI_EMBED_MODEL=gemini-embedding-001` (devuelve 1536 dimensiones). `gemini-2.5-flash` ya no está disponible para cuentas nuevas.
+
 ## Agente comercial
 
 - **Contexto**: empresa (nombre del agente, tono, producto), líneas con criterios, lead actual, hasta 6 fragmentos de conocimiento (búsqueda vectorial o de texto en español), horarios libres reales y los últimos 30 mensajes.

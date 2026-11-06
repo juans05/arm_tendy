@@ -9,6 +9,7 @@ import { Cita } from '../calendario/cita.entity';
 import { LeadHistorial } from '../leads/lead-historial.entity';
 import { Lead } from '../leads/lead.entity';
 import { Miembro } from '../miembros/miembro.entity';
+import { AnunciosService } from '../anuncios/anuncios.service';
 import { ReportesService } from './reportes.service';
 
 const DIA = 24 * 3600_000;
@@ -155,5 +156,21 @@ describe('ReportesService', () => {
         Comercial: 'Ana',
       }),
     ]);
+  });
+
+  it('incluye el gasto de Meta Ads del período cuando hay cuenta conectada', async () => {
+    const pedidos: unknown[][] = [];
+    const anuncios = {
+      resumen: async (...a: unknown[]) => {
+        pedidos.push(a);
+        return { gasto: 300, costoPorLead: 100 };
+      },
+    } as unknown as AnunciosService;
+    const r = await new ReportesService(db, anuncios).kpis(gerente, {
+      desde,
+      hasta,
+    });
+    expect(r.anuncios).toEqual({ gasto: 300, costoPorLead: 100 });
+    expect(pedidos).toEqual([['t', desde, hasta, 'America/Lima']]);
   });
 });

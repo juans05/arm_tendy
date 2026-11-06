@@ -1,6 +1,7 @@
 'use client';
 import { FormEvent, useEffect, useState } from 'react';
 import ConectarWhatsapp, { ConfigMeta } from '@/components/ConectarWhatsapp';
+import CuentaAnuncios from '@/components/CuentaAnuncios';
 import { IconoCanales } from '@/components/Iconos';
 import { api } from '@/lib/api';
 import { useMiembro } from '@/lib/miembro-ctx';
@@ -74,6 +75,8 @@ export default function Canales() {
         )}
         <ConectarManual onConectado={conectado} />
       </section>
+
+      <CuentaAnuncios />
     </div>
   );
 }

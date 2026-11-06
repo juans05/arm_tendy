@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { API, api, Linea, Miembro } from '@/lib/api';
 import { useMiembro } from '@/lib/miembro-ctx';
 import { leerToken } from '@/lib/sesion';
+import InversionMeta, { ResumenAnuncios } from '@/components/panel/InversionMeta';
 
 interface Periodo {
   ventas: { cantidad: number; monto: number; ticket: number; porLinea: { linea: string; cantidad: number; monto: number }[] };
@@ -37,6 +38,7 @@ interface Kpis {
   actual: Periodo;
   anterior: Periodo;
   proximo: { demos: number; seguimientoActivos: number };
+  anuncios: ResumenAnuncios | null;
 }
 
 const RANGOS = { 7: 'Últimos 7 días', 30: 'Últimos 30 días', 90: 'Últimos 90 días' } as const;
@@ -262,9 +264,23 @@ export default function Panel() {
                   </table>
                 </div>
               )}
-              <p className="mt-3 text-xs text-gris">El costo por lead y por venta llegará cuando se conecte el gasto de Meta Ads.</p>
+              {!k.anuncios && (
+                <p className="mt-3 text-xs text-gris">
+                  Conecta tu cuenta publicitaria en{' '}
+                  <a href="/canales" className="underline">
+                    Canales
+                  </a>{' '}
+                  para ver cuánto cuesta cada lead, demo y venta.
+                </p>
+              )}
             </Caja>
           </div>
+
+          {k.anuncios && (
+            <Caja titulo="Inversión en Meta Ads">
+              <InversionMeta r={k.anuncios} />
+            </Caja>
+          )}
         </>
       )}
     </section>

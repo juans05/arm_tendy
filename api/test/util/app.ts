@@ -13,6 +13,9 @@ export async function crearApp(
   process.env.LIMITE_POR_MINUTO ??= '100000';
   // Contador en memoria: en Redis quedaría entre corridas (el almacenamiento en Redis tiene su prueba).
   process.env.LIMITE_REDIS ??= 'off';
+  // Sin IA real: las pruebas que la necesitan la simulan (el .env local puede tener claves).
+  process.env.AI_BASE_URL = '';
+  process.env.AI_FALLBACK_BASE_URL = '';
   const { AppModule } = await import('../../src/app.module');
   const modulo = await overrides(
     Test.createTestingModule({ imports: [AppModule] }),

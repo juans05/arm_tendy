@@ -1,4 +1,5 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { AnunciosService } from '../anuncios/anuncios.service';
 import { DataSource } from 'typeorm';
 import * as XLSX from 'xlsx';
 import {
@@ -30,7 +31,10 @@ const FILTRO = `l.tenant = $1 AND ($4::uuid IS NULL OR l.linea_id = $4) AND ($5:
 
 @Injectable()
 export class ReportesService {
-  constructor(private readonly db: DataSource) {}
+  constructor(
+    private readonly db: DataSource,
+    @Optional() private readonly anuncios?: AnunciosService,
+  ) {}
 
   private exigirGerente(m: Miembro) {
     if (m.rol !== 'gerente')
@@ -40,7 +44,8 @@ export class ReportesService {
   async kpis(m: Miembro, f: FiltroKpis) {
     this.exigirGerente(m);
     const largo = f.hasta.getTime() - f.desde.getTime();
-    const [actual, anterior, proximo] = await Promise.all([
+    const zona = (await this.config(m.tenant)).zonaHoraria;
+    const [actual, anterior, proximo, anuncios] = await Promise.all([
       this.calcular(m.tenant, f),
       this.calcular(m.tenant, {
         ...f,
@@ -48,8 +53,10 @@ export class ReportesService {
         hasta: f.desde,
       }),
       this.proximo(m.tenant),
+      // Gasto de Meta Ads del período (sin filtros de línea o comercial: Meta no los conoce).
+      this.anuncios?.resumen(m.tenant, f.desde, f.hasta, zona) ?? null,
     ]);
-    return { actual, anterior, proximo };
+    return { actual, anterior, proximo, anuncios };
   }
 
   private q<T = Record<string, unknown>>(
@@ -324,11 +331,16 @@ export class ReportesService {
     };
   }
 
+  private async config(tenant: string) {
+    return (
+      (await this.db.getRepository(EmpresaConfig).findOneBy({ tenant })) ??
+      configPorDefecto(tenant)
+    );
+  }
+
   /** Leads por día de la semana y hora (hora local), y % que llegó fuera del horario de los comerciales. */
   private async cuando(tenant: string, fechas: Date[]) {
-    const config =
-      (await this.db.getRepository(EmpresaConfig).findOneBy({ tenant })) ??
-      configPorDefecto(tenant);
+    const config = await this.config(tenant);
     const horarios = await this.db
       .createQueryBuilder(Horario, 'h')
       .innerJoin(Miembro, 'm', "m.id = h.miembro_id AND m.estado = 'activo'")

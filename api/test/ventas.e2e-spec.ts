@@ -194,4 +194,24 @@ describe('Embudo, calendario y panel (e2e)', () => {
       .send({ zonaHoraria: 'America/Lima' })
       .expect(200);
   });
+
+  it('la cuenta de Meta Ads la ve y la conecta solo el gerente', async () => {
+    const { gerente, comercial } = await equipo('v11');
+    await http().get('/anuncios/cuenta').set(auth(comercial)).expect(403);
+    await http()
+      .put('/anuncios/cuenta')
+      .set(auth(comercial))
+      .send({ cuentaId: '1', token: 'x' })
+      .expect(403);
+    const r = await http()
+      .get('/anuncios/cuenta')
+      .set(auth(gerente))
+      .expect(200);
+    expect(r.body).toEqual({ cuenta: null });
+    await http()
+      .put('/anuncios/cuenta')
+      .set(auth(gerente))
+      .send({ cuentaId: 'act_1' })
+      .expect(400);
+  });
 });
