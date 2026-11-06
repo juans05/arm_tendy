@@ -80,6 +80,7 @@ describe('PlantillasService', () => {
 
   it('envía la plantilla con sus variables, guarda el mensaje y el comercial se queda con el lead', async () => {
     const conv = await db.getRepository(Conversacion).findOneByOrFail({});
+    await db.getRepository(Conversacion).update(conv.id, { alertaNivel: 1 });
     const m = await svc.enviar(ana, conv.id, 'retomamos', 'es', ['Rosa']);
     expect(m).toMatchObject({
       origen: 'humano',
@@ -98,6 +99,10 @@ describe('PlantillasService', () => {
     expect((await db.getRepository(Lead).findOneByOrFail({})).duenoId).toBe(
       ana.id,
     );
+    expect(
+      (await db.getRepository(Conversacion).findOneByOrFail({ id: conv.id }))
+        .alertaNivel,
+    ).toBe(0);
   });
 
   it('no envía si faltan variables', async () => {

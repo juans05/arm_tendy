@@ -129,7 +129,8 @@ export class EntrantesService {
         `UPDATE conversaciones SET ultimo_mensaje_en = GREATEST(ultimo_mensaje_en, $2),
            ultimo_entrante_en = CASE WHEN $3 THEN GREATEST(COALESCE(ultimo_entrante_en, $2), $2) ELSE ultimo_entrante_en END,
            no_leidos = no_leidos + CASE WHEN $3 THEN 1 ELSE 0 END,
-           modo = CASE WHEN $3 THEN modo ELSE 'humano' END
+           modo = CASE WHEN $3 THEN modo ELSE 'humano' END,
+           alerta_nivel = CASE WHEN $3 THEN alerta_nivel ELSE 0 END
          WHERE id = $1`,
         [conversacionId, en, entrante],
       );

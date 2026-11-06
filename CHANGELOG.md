@@ -12,6 +12,7 @@
 - Panel del gerente con KPIs comparados con el período anterior y export a Excel.
 - Seguridad: helmet, límite de peticiones, CSP y cabeceras en la web.
 - Dockerfiles, CI y documentación.
+- Revisión final: archivos del cliente que no se abren como página, CSP compatible con el alta de WhatsApp, eventos en tiempo real y endpoints del agente filtrados por dueño, avisos de "sin atender" que se reinician al responder desde el celular o con plantilla, zona horaria validada, barrido que aísla registros con problemas, seguimientos sin envíos seguidos y cambios de etapa que no pisan los de una persona.
 
 ## 0.1.0
 

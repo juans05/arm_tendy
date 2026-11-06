@@ -143,6 +143,8 @@ describe('EntrantesService', () => {
   it('eco pasa la conversación a humano', async () => {
     await crearNumero(db, 'wuarikes', 'ph1');
     await svc.procesar(payloadTexto('ph1', 'wamid.1'));
+    const c0 = await db.getRepository(Conversacion).findOneByOrFail({});
+    await db.getRepository(Conversacion).update(c0.id, { alertaNivel: 2 });
     await svc.procesar({
       entry: [
         {
@@ -168,6 +170,8 @@ describe('EntrantesService', () => {
     const conv = await db.getRepository(Conversacion).findOneByOrFail({});
     expect(conv.modo).toBe('humano');
     expect(conv.noLeidos).toBe(1);
+    // Responder desde el celular cuenta como atender: se reinician los avisos de "sin atender".
+    expect(conv.alertaNivel).toBe(0);
     const eco = await db
       .getRepository(Mensaje)
       .findOneByOrFail({ waMessageId: 'wamid.e1' });

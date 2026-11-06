@@ -43,9 +43,21 @@ export async function anotarEtapa(
   lead: Pick<Lead, 'id' | 'tenant' | 'etapa'>,
   a: Etapa,
   miembroId: string | null,
-): Promise<void> {
-  if (lead.etapa === a) return;
-  await em.update(Lead, { id: lead.id }, { etapa: a, etapaEn: new Date() });
+): Promise<boolean> {
+  if (lead.etapa === a) return false;
+  // Solo si la etapa sigue siendo la que se leyó: no pisa un cambio que alguien hizo entretanto.
+  // Cada entrada a "seguimiento" empieza su calendario de cero.
+  const r = await em.update(
+    Lead,
+    { id: lead.id, etapa: lead.etapa },
+    {
+      etapa: a,
+      etapaEn: new Date(),
+      seguimientoProximo: null,
+      seguimientoPaso: 0,
+    },
+  );
+  if (!r.affected) return false;
   await em.insert(LeadHistorial, {
     tenant: lead.tenant,
     leadId: lead.id,
@@ -53,6 +65,7 @@ export async function anotarEtapa(
     a,
     miembroId,
   });
+  return true;
 }
 
 @Injectable()

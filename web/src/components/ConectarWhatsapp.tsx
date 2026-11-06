@@ -19,7 +19,7 @@ export interface ConfigMeta {
 }
 
 function cargarSdk(appId: string, version: string): Promise<void> {
-  return new Promise((ok) => {
+  return new Promise((ok, falla) => {
     if (window.FB) return ok();
     window.fbAsyncInit = () => {
       window.FB.init({ appId, autoLogAppEvents: true, xfbml: false, version });
@@ -30,6 +30,7 @@ function cargarSdk(appId: string, version: string): Promise<void> {
       s.id = 'facebook-jssdk';
       s.async = true;
       s.src = 'https://connect.facebook.net/en_US/sdk.js';
+      s.onerror = () => falla(new Error('No se pudo cargar Facebook'));
       document.body.appendChild(s);
     }
   });
@@ -59,7 +60,14 @@ export default function ConectarWhatsapp({ config, onConectado }: { config: Conf
 
   useEffect(() => {
     const alMensaje = (e: MessageEvent) => {
-      if (!e.origin.endsWith('facebook.com')) return;
+      const host = (() => {
+        try {
+          return new URL(e.origin).hostname;
+        } catch {
+          return '';
+        }
+      })();
+      if (host !== 'facebook.com' && !host.endsWith('.facebook.com')) return;
       try {
         const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (data?.type !== 'WA_EMBEDDED_SIGNUP') return;

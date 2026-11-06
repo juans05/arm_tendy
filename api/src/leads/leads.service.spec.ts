@@ -10,7 +10,7 @@ import { LineaProducto } from '../lineas/linea-producto.entity';
 import { Miembro } from '../miembros/miembro.entity';
 import { LeadHistorial } from './lead-historial.entity';
 import { Lead } from './lead.entity';
-import { LeadsService } from './leads.service';
+import { anotarEtapa, LeadsService } from './leads.service';
 
 describe('LeadsService', () => {
   let db: DataSource;
@@ -183,5 +183,24 @@ describe('LeadsService', () => {
         contacto: expect.objectContaining({ telefono: '51911' }),
       }),
     ]);
+  });
+
+  it('un cambio de etapa con datos viejos no pisa el que hizo una persona entretanto', async () => {
+    const { lead: viejo } = await nuevoLead();
+    await leads.actualizar(gerente, viejo.id, {
+      etapa: 'perdido',
+      motivo: 'precio',
+    });
+    await db.transaction((em) =>
+      anotarEtapa(em, viejo, 'en_conversacion', null),
+    );
+    expect(
+      (await db.getRepository(Lead).findOneByOrFail({ id: viejo.id })).etapa,
+    ).toBe('perdido');
+    expect(
+      await db
+        .getRepository(LeadHistorial)
+        .countBy({ leadId: viejo.id, a: 'en_conversacion' }),
+    ).toBe(0);
   });
 });

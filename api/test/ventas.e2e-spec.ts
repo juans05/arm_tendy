@@ -156,4 +156,42 @@ describe('Embudo, calendario y panel (e2e)', () => {
       .expect(200);
     expect(p.body).toEqual({ alertasOff: ['resumen_diario'] });
   });
+
+  it('un comercial no ve ni devuelve a la IA el chat de otro', async () => {
+    const { gerente, comercial } = await equipo('v9');
+    const gId = (await http().get('/me').set(auth(gerente))).body.miembro.id;
+    const l = await lead('v9', 'phv9');
+    await db.getRepository(Lead).update(l.id, { duenoId: gId });
+    const c = l.conversacionId;
+    await http()
+      .get(`/conversaciones/${c}/lead`)
+      .set(auth(comercial))
+      .expect(404);
+    await http()
+      .get(`/conversaciones/${c}/ejecuciones`)
+      .set(auth(comercial))
+      .expect(404);
+    await http()
+      .post(`/conversaciones/${c}/devolver-ia`)
+      .set(auth(comercial))
+      .expect(404);
+    await http()
+      .get(`/conversaciones/${c}/lead`)
+      .set(auth(gerente))
+      .expect(200);
+  });
+
+  it('rechaza una zona horaria que no existe', async () => {
+    const { gerente } = await equipo('v10');
+    await http()
+      .put('/agente/config')
+      .set(auth(gerente))
+      .send({ zonaHoraria: 'Lima' })
+      .expect(400);
+    await http()
+      .put('/agente/config')
+      .set(auth(gerente))
+      .send({ zonaHoraria: 'America/Lima' })
+      .expect(200);
+  });
 });

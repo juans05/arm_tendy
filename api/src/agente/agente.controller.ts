@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Conversacion } from '../bandeja/conversacion.entity';
+import { BandejaService } from '../bandeja/bandeja.service';
 import { EventosService } from '../bandeja/eventos.service';
 import { Mensaje } from '../bandeja/mensaje.entity';
 import { EjecucionIa } from '../ia/ejecucion-ia.entity';
@@ -28,7 +29,14 @@ export class AgenteController {
     private readonly ia: IaService,
     private readonly cola: ColaAgente,
     private readonly eventos: EventosService,
+    private readonly bandeja: BandejaService,
   ) {}
+
+  /** Un comercial solo ve sus chats y los que no tienen dueño. */
+  private async exigirVisible(m: Miembro, id: string) {
+    if (!(await this.bandeja.puedeVer(m, id)))
+      throw new NotFoundException('Conversación no encontrada');
+  }
 
   @Get('agente/config')
   async config(@MiembroActual() m: Miembro) {
@@ -54,6 +62,7 @@ export class AgenteController {
     @MiembroActual() m: Miembro,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
+    await this.exigirVisible(m, id);
     const lead = await this.db
       .getRepository(Lead)
       .findOneBy({ tenant: m.tenant, conversacionId: id });
@@ -63,10 +72,11 @@ export class AgenteController {
 
   /** Pestaña "Agente": qué hizo la IA en esta conversación y con qué costo. */
   @Get('conversaciones/:id/ejecuciones')
-  ejecuciones(
+  async ejecuciones(
     @MiembroActual() m: Miembro,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
+    await this.exigirVisible(m, id);
     return this.db.getRepository(EjecucionIa).find({
       where: { tenant: m.tenant, conversacionId: id },
       order: { createdAt: 'DESC' },
@@ -80,6 +90,7 @@ export class AgenteController {
     @MiembroActual() m: Miembro,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
+    await this.exigirVisible(m, id);
     const r = await this.db
       .getRepository(Conversacion)
       .update({ id, tenant: m.tenant }, { modo: 'ia', borrador: null });

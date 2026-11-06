@@ -7,12 +7,14 @@ const dev = process.env.NODE_ENV !== 'production';
 // CSP: la app solo habla con la API de ARM y con Cuentas. En desarrollo Next necesita eval y websockets.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
+  // connect.facebook.net y facebook.com: SDK de Meta para conectar WhatsApp (Embedded Signup).
+  `script-src 'self' 'unsafe-inline' https://connect.facebook.net${dev ? " 'unsafe-eval'" : ''}`,
+  'frame-src https://*.facebook.com',
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "media-src 'self' blob:",
   "font-src 'self'",
-  `connect-src 'self' ${api} ${cuentas}${dev ? ' ws:' : ''}`.trim(),
+  `connect-src 'self' ${api} ${cuentas} https://*.facebook.com${dev ? ' ws:' : ''}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -9,7 +9,7 @@ import {
   Sse,
   StreamableFile,
 } from '@nestjs/common';
-import { filter, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { DataSource } from 'typeorm';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SuiteUser } from '../auth/suite-user';
@@ -18,7 +18,7 @@ import { Miembro } from '../miembros/miembro.entity';
 import { MiembroActual } from '../miembros/miembros.decorators';
 import { BandejaService } from './bandeja.service';
 import { EnviarMensajeDto } from './dto/enviar-mensaje.dto';
-import { EventosService } from './eventos.service';
+import { EventosService, visiblesPara } from './eventos.service';
 import { flujoDeSesion } from './sesion-sse';
 
 @Controller()
@@ -58,7 +58,8 @@ export class BandejaController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     const { datos, mime } = await this.bandeja.media(m, id);
-    return new StreamableFile(datos, { type: mime });
+    // Siempre como adjunto: un HTML o SVG que mande el cliente nunca se abre como página.
+    return new StreamableFile(datos, { type: mime, disposition: 'attachment' });
   }
 
   // Tiempo real de la bandeja: solo eventos de la empresa del miembro.
@@ -68,10 +69,9 @@ export class BandejaController {
     @MiembroActual() m: Miembro,
     @CurrentUser() u: SuiteUser,
   ): Observable<MessageEvent> {
-    // ponytail: los eventos de chats ajenos llegan igual al comercial (la lista y los mensajes sí se filtran).
     const propios = this.eventos
       .deEmpresa(m.tenant)
-      .pipe(filter((e) => e.tipo !== 'alerta' || e.miembroId === m.id));
+      .pipe(visiblesPara(m, (id) => this.bandeja.puedeVer(m, id)));
     return flujoDeSesion(propios, {
       venceEn: u.exp ? u.exp * 1000 : undefined,
       sigueActivo: () =>

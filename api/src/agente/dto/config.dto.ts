@@ -3,6 +3,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsTimeZone,
   Length,
   Matches,
   Max,
@@ -18,7 +19,7 @@ export class ConfigAgenteDto {
   @IsOptional() @IsString() @Length(1, 60) agenteNombre?: string;
   @IsOptional() @IsString() @Length(0, 2000) agenteTono?: string;
   @IsOptional() @IsString() @Length(0, 5000) producto?: string;
-  @IsOptional() @IsString() @Length(1, 50) zonaHoraria?: string;
+  @IsOptional() @IsTimeZone() zonaHoraria?: string;
   @IsOptional() @IsInt() @Min(0) @Max(120) margenCitasMin?: number;
   @IsOptional() @IsInt() @Min(1) @Max(60) seguimientoDias1?: number;
   @IsOptional() @IsInt() @Min(1) @Max(90) seguimientoDias2?: number;

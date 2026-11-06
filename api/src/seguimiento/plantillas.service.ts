@@ -133,7 +133,12 @@ export class PlantillasService {
       await em.update(
         Conversacion,
         { id: conv.id },
-        { modo: 'humano', ultimoMensajeEn: msg.createdAt, borrador: null },
+        {
+          modo: 'humano',
+          ultimoMensajeEn: msg.createdAt,
+          borrador: null,
+          alertaNivel: 0,
+        },
       );
       await em.query(
         'UPDATE leads SET dueno_id = $1 WHERE conversacion_id = $2 AND dueno_id IS NULL',

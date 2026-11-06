@@ -65,10 +65,16 @@ export async function subir<T>(path: string, form: FormData): Promise<Respuesta<
   return { status: res.status, code: body?.code, message };
 }
 
+// Solo estos tipos se muestran en la app; el resto (HTML, SVG…) podría correr código con la sesión.
+const MOSTRABLES = /^(image\/(jpeg|png|webp|gif)|audio\/[\w.+-]+|video\/[\w.+-]+|application\/pdf)$/;
+export function blobSeguro(b: Blob): Blob {
+  return MOSTRABLES.test(b.type) ? b : new Blob([b], { type: 'application/octet-stream' });
+}
+
 // Archivo protegido (imagen o audio) como URL local: <img> no puede mandar el token en la cabecera.
 export async function urlDeArchivo(path: string): Promise<string | null> {
   const token = leerToken();
   const res = await fetch(`${API}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} }).catch(() => null);
   if (!res?.ok) return null;
-  return URL.createObjectURL(await res.blob());
+  return URL.createObjectURL(blobSeguro(await res.blob()));
 }

@@ -13,6 +13,8 @@
 | Cabeceras | `helmet` en la API; CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` y `Permissions-Policy` en la web |
 | Inyección en la IA | Reglas en el mensaje de sistema, contenido del cliente como datos, salida validada contra lista blanca |
 | Entradas | `ValidationPipe` con `whitelist`; archivos ≤ 10 MB y tipos permitidos; media de Meta ≤ 25 MB |
+| Archivos del cliente | Se sirven como adjunto; la web solo muestra imágenes, audio, video y PDF (un HTML o SVG se baja, no se abre) |
+| Tiempo real | El SSE filtra por miembro: un comercial solo recibe eventos de sus chats y de los sin dueño, y sus propias alertas |
 | Spam a clientes | Baja (`no_contactar`) respetada por seguimiento, recordatorios y plantillas |
 
 ## Pendientes
@@ -21,7 +23,6 @@
 - El token viaja en la URL solo en `GET /eventos` (EventSource no admite cabeceras); los logs del proxy no deben guardar query strings.
 - El token se guarda en `localStorage`; cambiar a cookie `httpOnly` cuando Cuentas lo soporte.
 - El límite de peticiones es por instancia (en memoria).
-- Los eventos SSE de conversaciones ajenas llegan también a comerciales (la lista y los mensajes sí se filtran).
 
 ## Reportar un problema
 

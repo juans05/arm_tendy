@@ -53,6 +53,16 @@ export class SeguimientoService {
     }
   }
 
+  /** Un registro con problemas (por ejemplo, una zona horaria inválida) no frena a los demás. */
+  private async cadaUno<T>(items: T[], fn: (x: T) => Promise<void>) {
+    for (const x of items)
+      try {
+        await fn(x);
+      } catch (e) {
+        this.log.error(`Barrido: ${(e as Error).message}`);
+      }
+  }
+
   private async config(tenant: string) {
     return (
       (await this.db.getRepository(EmpresaConfig).findOneBy({ tenant })) ??
@@ -148,7 +158,7 @@ export class SeguimientoService {
       .take(200)
       .getMany();
 
-    for (const lead of vencidos) {
+    await this.cadaUno(vencidos, async (lead) => {
       const config = await this.config(lead.tenant);
       const conv = await this.conversacion(lead.conversacionId);
       if (lead.seguimientoPaso >= 2 || conv.contacto!.noContactar) {
@@ -156,7 +166,7 @@ export class SeguimientoService {
           await em.update(Lead, lead.id, { seguimientoProximo: null });
           await anotarEtapa(em, lead, 'archivado', null);
         });
-        continue;
+        return;
       }
       const nombre = conv.contacto!.nombre.split(' ')[0];
       const enviado = await this.escribir(
@@ -181,9 +191,11 @@ export class SeguimientoService {
         paso === 1 ? config.seguimientoDias2 : 2 * config.seguimientoDias2;
       await this.db.getRepository(Lead).update(lead.id, {
         seguimientoPaso: paso,
-        seguimientoProximo: new Date(lead.etapaEn.getTime() + dias * DIA),
+        seguimientoProximo: new Date(
+          Math.max(lead.etapaEn.getTime() + dias * DIA, ahora.getTime() + DIA),
+        ),
       });
-    }
+    });
   }
 
   /** El cliente volvió a escribir: se corta el seguimiento y el lead revive. */
@@ -237,7 +249,7 @@ export class SeguimientoService {
         LIMIT 200`,
       [ahora],
     );
-    for (const f of filas) {
+    await this.cadaUno(filas, async (f) => {
       // Se sube el nivel antes de avisar: si otro barrido ya lo hizo, este no repite el aviso.
       const subio = await this.db
         .getRepository(Conversacion)
@@ -245,7 +257,7 @@ export class SeguimientoService {
           { id: f.id, alertaNivel: f.nivel },
           { alertaNivel: f.nivel + 1 },
         );
-      if (!subio.affected) continue;
+      if (!subio.affected) return;
       const aGerentes = f.nivel === 1 || !f.dueno_id;
       await this.alertas.avisar(
         f.tenant,
@@ -260,7 +272,7 @@ export class SeguimientoService {
           enlace: `/bandeja?c=${f.id}`,
         },
       );
-    }
+    });
   }
 
   // ---- Recordatorios de demo ----
@@ -281,7 +293,7 @@ export class SeguimientoService {
       .take(200)
       .getMany();
 
-    for (const c of citas) {
+    await this.cadaUno(citas, async (c) => {
       const falta = c.inicio.getTime() - t;
       const config = await this.config(c.tenant);
       const lead = c.leadId
@@ -326,16 +338,16 @@ export class SeguimientoService {
       }
       if (Object.keys(marcas).length)
         await this.db.getRepository(Cita).update(c.id, marcas);
-    }
+    });
   }
 
   // ---- Resumen diario ----
 
   private async resumenes(ahora: Date) {
     const tenants: { tenant: string }[] = await this.db.query(
-      "SELECT DISTINCT tenant FROM miembros WHERE estado = 'activo' AND rol = 'gerente'",
+      "SELECT DISTINCT tenant FROM miembros WHERE estado = 'activo' AND rol = 'gerente' ORDER BY tenant",
     );
-    for (const { tenant } of tenants) {
+    await this.cadaUno(tenants, async ({ tenant }) => {
       const config = await this.config(tenant);
       const { fecha } = diaLocal(ahora, config.zonaHoraria);
       const hora = Number(
@@ -345,7 +357,7 @@ export class SeguimientoService {
           hourCycle: 'h23',
         }).format(ahora),
       );
-      if (hora < HORA_RESUMEN || config.resumenEnviado === fecha) continue;
+      if (hora < HORA_RESUMEN || config.resumenEnviado === fecha) return;
       await this.db
         .getRepository(EmpresaConfig)
         .save({ ...config, resumenEnviado: fecha });
@@ -364,6 +376,6 @@ export class SeguimientoService {
         detalle: `Últimas 24 h: ${r.nuevos} leads nuevos, ${r.ganados} ventas. Hoy: ${r.demos} demos. Sin atender: ${r.sin_atender}.`,
         enlace: '/panel',
       });
-    }
+    });
   }
 }

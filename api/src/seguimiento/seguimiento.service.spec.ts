@@ -27,6 +27,7 @@ describe('SeguimientoService', () => {
   let seg: SeguimientoService;
   let gerente: Miembro;
   let ana: Miembro;
+  let leadsSvc: LeadsService;
 
   beforeAll(async () => (db = await crearDbTest()));
   afterAll(() => db.destroy());
@@ -67,7 +68,7 @@ describe('SeguimientoService', () => {
       rol: 'comercial',
       estado: 'activo',
     });
-    void leads;
+    leadsSvc = leads;
   });
 
   const nuevoLead = async (from = '51911') => {
@@ -111,6 +112,43 @@ describe('SeguimientoService', () => {
       await seg.barrer(new Date(t0.getTime() + 14 * DIA + 3 * H));
       expect((await leadDe(lead.id)).etapa).toBe('archivado');
       expect(enviados).toHaveLength(2);
+    });
+
+    it('si el primer plazo es mayor que el segundo, no manda dos seguimientos seguidos', async () => {
+      await db.getRepository(EmpresaConfig).save({
+        tenant: 't',
+        plantillaSeguimiento: 'retomamos',
+        seguimientoDias1: 7,
+        seguimientoDias2: 3,
+      });
+      const { lead } = await nuevoLead();
+      const t0 = new Date();
+      await db
+        .getRepository(Lead)
+        .update(lead.id, { etapa: 'seguimiento', etapaEn: t0 });
+      await seg.barrer(new Date(t0.getTime() + 7 * DIA + H));
+      expect(enviados).toHaveLength(1);
+      await seg.barrer(new Date(t0.getTime() + 7 * DIA + H + 60_000));
+      expect(enviados).toHaveLength(1);
+    });
+
+    it('un lead que vuelve a seguimiento empieza de cero, sin mensajes viejos pendientes', async () => {
+      await db
+        .getRepository(EmpresaConfig)
+        .save({ tenant: 't', plantillaSeguimiento: 'retomamos' });
+      const { lead } = await nuevoLead();
+      const t0 = new Date(Date.now() - 30 * DIA);
+      await db
+        .getRepository(Lead)
+        .update(lead.id, { etapa: 'seguimiento', etapaEn: t0 });
+      await seg.barrer(new Date(t0.getTime() + 3 * DIA + H));
+      expect(enviados).toHaveLength(1);
+      // El comercial lo saca a mano y semanas después lo devuelve a seguimiento.
+      await leadsSvc.actualizar(gerente, lead.id, { etapa: 'en_conversacion' });
+      await leadsSvc.actualizar(gerente, lead.id, { etapa: 'seguimiento' });
+      await seg.barrer(new Date());
+      expect(enviados).toHaveLength(1);
+      expect((await leadDe(lead.id)).etapa).toBe('seguimiento');
     });
 
     it('sin plantilla configurada avisa al dueño para que escriba él', async () => {
@@ -247,6 +285,26 @@ describe('SeguimientoService', () => {
       await seg.barrer(ahora);
       expect(enviados).toEqual([]);
     });
+  });
+
+  it('una zona horaria inválida en una empresa no frena el barrido de las demás', async () => {
+    await db
+      .getRepository(EmpresaConfig)
+      .save({ tenant: 't', zonaHoraria: 'Lima' });
+    await crearNumero(db, 'u', 'ph2');
+    const otro = await db.getRepository(Miembro).save({
+      tenant: 'u',
+      userId: 'g2',
+      username: 'g2',
+      nombre: 'Gere 2',
+      rol: 'gerente',
+      estado: 'activo',
+    });
+    const ocho = new Date('2026-11-05T13:30:00Z'); // 08:30 en Lima
+    await seg.barrer(ocho);
+    expect((await alertasDe(otro)).map((a) => a.tipo)).toContain(
+      'resumen_diario',
+    );
   });
 
   describe('resumen diario', () => {
