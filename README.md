@@ -22,4 +22,4 @@ Puertos locales: API de PuntoVenta/Cuentas `:3001` (necesita `TokenManagement:Rs
 
 ## Documentación
 
-[Arquitectura](docs/ARCHITECTURE.md) · [Base de datos](docs/DATABASE.md) · [API](docs/API.md) · [IA](docs/AI_ARCHITECTURE.md) · [Seguridad](docs/SECURITY.md) · [Despliegue](docs/DEPLOYMENT.md) · [Hoja de ruta](docs/ROADMAP.md) · [Cambios](CHANGELOG.md)
+[Arquitectura](docs/ARCHITECTURE.md) · [Base de datos](docs/DATABASE.md) · [API](docs/API.md) · [IA](docs/AI_ARCHITECTURE.md) · [Seguridad](docs/SECURITY.md) · [Despliegue](docs/DEPLOYMENT.md) · [Hoja de ruta](docs/ROADMAP.md) · [Frente a Twenty](docs/COMPARATIVA_TWENTY.md) · [Cambios](CHANGELOG.md)
