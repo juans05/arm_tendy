@@ -9,7 +9,7 @@
 | Escalada de rol | Guards globales en orden: límite → token → miembro activo → rol. Miembros desactivados pierden el SSE en el siguiente chequeo |
 | Webhook falso | Firma HMAC `x-hub-signature-256` con `META_APP_SECRET`; idempotencia por `wa_message_id` |
 | Tokens de Meta en la base | Cifrados con AES-256-GCM (`FIELD_ENCRYPTION_KEY`) |
-| Abuso de la API | `@nestjs/throttler`: 300 peticiones por minuto e IP (el webhook queda fuera; lo protege la firma) |
+| Abuso de la API | `@nestjs/throttler`: 300 peticiones por minuto e IP, contadas en Redis para todas las instancias (el webhook queda fuera; lo protege la firma) |
 | Cabeceras | `helmet` en la API; CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` y `Permissions-Policy` en la web |
 | Inyección en la IA | Reglas en el mensaje de sistema, contenido del cliente como datos, salida validada contra lista blanca |
 | Entradas | `ValidationPipe` con `whitelist`; archivos ≤ 10 MB y tipos permitidos; media de Meta ≤ 25 MB |
@@ -19,10 +19,9 @@
 
 ## Pendientes
 
-- **NestJS 10**: `npm audit` reporta avisos en `body-parser` (alto) y `@nestjs/core` (moderado) que se resuelven con la actualización a Nest 11.
+- **TypeORM 0.3**: `npm audit` reporta 3 avisos moderados en `glob`/`minimatch`, que TypeORM usa solo para cargar entidades y migraciones con patrones propios (no con datos de usuarios). Se cierran con TypeORM 1.x junto con NestJS 12.
 - El token viaja en la URL solo en `GET /eventos` (EventSource no admite cabeceras); los logs del proxy no deben guardar query strings.
 - El token se guarda en `localStorage`; cambiar a cookie `httpOnly` cuando Cuentas lo soporte.
-- El límite de peticiones es por instancia (en memoria).
 
 ## Reportar un problema
 

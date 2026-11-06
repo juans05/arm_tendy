@@ -1,6 +1,6 @@
 # API de ARM
 
-Base: `https://<api>` (local `http://localhost:3002`). Todas las rutas piden `Authorization: Bearer <token de la suite>` salvo `/health` y el webhook. Errores: `{ statusCode, message, code? }`. Límite: 300 peticiones por minuto e IP (`LIMITE_POR_MINUTO`).
+Base: `https://<api>` (local `http://localhost:3002`). Todas las rutas piden `Authorization: Bearer <token de la suite>` salvo `/health` y el webhook. Errores: `{ statusCode, message, code? }`. Límite: 300 peticiones por minuto e IP (`LIMITE_POR_MINUTO`), compartido entre instancias por Redis.
 
 **G** = solo gerente. **Visibilidad**: un comercial ve sus leads/conversaciones y los que no tienen dueño.
 

@@ -29,7 +29,7 @@ ARM es el CRM con IA de la suite (Cuentas + ARP + ARM). Atiende el WhatsApp de v
 3. **Traspaso.** Al pasar a humano se asigna el comercial de la línea con menos leads abiertos (o uno que recibe demos) y se le avisa.
 4. **Calendario.** La IA solo ofrece horarios calculados por el servidor (`huecos.ts`: horario semanal, bloqueos, citas, margen y anticipación). La base impide dos citas cruzadas del mismo comercial (`EXCLUDE USING gist`).
 5. **Barrido de cada minuto** (job programado de BullMQ, una sola instancia lo corre): seguimiento a los "todavía no", leads sin atender (aviso al comercial y luego al gerente), recordatorios de demo (24 h, 2 h, 30 min) y resumen diario de las 8:00. Cada tarea deja una marca en la base para no repetirse.
-6. **Tiempo real.** `GET /eventos` (SSE) emite los eventos de la empresa; las alertas solo llegan a su destinatario.
+6. **Tiempo real.** `GET /eventos` (SSE) emite los eventos de la empresa, repartidos entre instancias por Redis. Un comercial solo recibe los de sus chats y los sin dueño; las alertas solo llegan a su destinatario.
 
 ## Decisiones
 
@@ -38,6 +38,6 @@ ARM es el CRM con IA de la suite (Cuentas + ARP + ARM). Atiende el WhatsApp de v
 | Webhook síncrono, sin cola | Simple y durable: Meta reintenta si no hay 200 | Con mucho tráfico conviene encolar el guardado |
 | Un solo cliente de IA compatible con OpenAI | Cubre OpenRouter, Gemini, OpenAI y Ollama con una interfaz | Funciones exclusivas de un proveedor requieren adaptador |
 | BullMQ directo, sin `@nestjs/bullmq` | El wrapper no soportaba la versión instalada | Algo más de código de arranque |
-| Bus de eventos en memoria | Un proceso basta hoy | Con varias instancias: Redis pub/sub |
+| Eventos en tiempo real por Redis pub/sub (en memoria si no hay Redis) | Varias instancias comparten el SSE; los procesos internos solo ven lo de su instancia para no duplicar trabajo | Si Redis cae, el SSE deja de recibir eventos hasta que vuelva (los datos ya están guardados) |
 | Aislamiento por empresa en la aplicación (sin RLS) | TypeORM no permite fijar la empresa por conexión sin tocar todos los módulos | Un filtro olvidado expone datos; lo cubren pruebas de aislamiento |
 | Un comercial ve sus leads y los sin dueño | Coincide con cómo trabajan los pilotos | Si se quiere ver todo, es un cambio de filtro |

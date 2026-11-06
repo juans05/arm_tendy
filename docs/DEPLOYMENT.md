@@ -26,7 +26,7 @@ Web (al construir): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_CUENTAS_URL`.
 
 ## Operación
 
-- **Una instancia de API** mientras el bus de eventos y el límite de peticiones estén en memoria. El barrido ya es seguro con varias (job programado de BullMQ).
+- **Varias instancias de API** funcionan con Redis: el tiempo real va por Redis pub/sub, el límite de peticiones se cuenta en Redis y el barrido es un job programado de BullMQ (corre una sola vez por minuto). Sin `REDIS_URL` todo queda en memoria y solo vale una instancia.
 - **Logs**: el logger de Nest a stdout; el proveedor los recolecta. Buscar `Barrido`, `Agente falló` y `No se guardaron` para incidentes.
 - **Respaldo**: ver `DATABASE.md`.
 - **CI**: `.github/workflows/ci.yml` corre lint, tipos, pruebas unitarias y e2e de la API y lint, tipos, pruebas y build de la web.

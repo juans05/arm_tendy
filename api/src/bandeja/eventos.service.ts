@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import Redis from 'ioredis';
 import { concatMap, filter, from, map, Observable, of, Subject } from 'rxjs';
 import type { Lead } from '../leads/lead.entity';
 import type { Pregunta } from '../conocimiento/pregunta.entity';
@@ -40,24 +46,55 @@ export function visiblesPara(
 
 export type EventoConEmpresa = { tenant: string; evento: EventoBandeja };
 
-// ponytail: en memoria, un solo proceso; Redis pub/sub si ARM corre en más de una instancia.
+const CANAL = 'arm:eventos';
+
+/**
+ * Bus de eventos. Con REDIS_URL el tiempo real (SSE) se reparte por Redis entre todas las instancias;
+ * los procesos internos (encolar al agente, barrido) solo ven lo de su propia instancia para no repetir trabajo.
+ */
 @Injectable()
-export class EventosService {
-  private readonly bus = new Subject<EventoConEmpresa>();
+export class EventosService implements OnModuleInit, OnModuleDestroy {
+  private readonly log = new Logger(EventosService.name);
+  private readonly interno = new Subject<EventoConEmpresa>();
+  private readonly difusion = new Subject<EventoConEmpresa>();
+  private pub?: Redis;
+  private sub?: Redis;
+
+  async onModuleInit() {
+    const url = process.env.REDIS_URL;
+    if (!url || process.env.EVENTOS_REDIS === 'off') return;
+    this.pub = new Redis(url, { maxRetriesPerRequest: null });
+    this.sub = this.pub.duplicate();
+    this.sub.on('message', (_canal, m: string) =>
+      this.difusion.next(JSON.parse(m) as EventoConEmpresa),
+    );
+    await this.sub.subscribe(CANAL);
+  }
+
+  async onModuleDestroy() {
+    await Promise.all([this.sub?.quit(), this.pub?.quit()]);
+  }
 
   emitir(tenant: string, evento: EventoBandeja): void {
-    this.bus.next({ tenant, evento });
+    const e = { tenant, evento };
+    this.interno.next(e);
+    if (!this.pub) return this.difusion.next(e);
+    this.pub
+      .publish(CANAL, JSON.stringify(e))
+      .catch((err: Error) =>
+        this.log.error(`No se publicó el evento: ${err.message}`),
+      );
   }
 
   deEmpresa(tenant: string): Observable<EventoBandeja> {
-    return this.bus.pipe(
+    return this.difusion.pipe(
       filter((e) => e.tenant === tenant),
       map((e) => e.evento),
     );
   }
 
-  /** Todos los eventos, para procesos internos (por ejemplo, encolar al agente). */
+  /** Eventos de esta instancia, para procesos internos (por ejemplo, encolar al agente). */
   todos(): Observable<EventoConEmpresa> {
-    return this.bus.asObservable();
+    return this.interno.asObservable();
   }
 }

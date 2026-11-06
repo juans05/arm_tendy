@@ -32,6 +32,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "helmet": "^8.3.0",
+    "ioredis": "^5.11.1",
     "jose": "^4.15.9",
     "mammoth": "^1.13.0",
     "openai": "^7.52.0",

@@ -11,6 +11,8 @@ export async function crearApp(
   // El barrido de cada minuto tocaría la base mientras las pruebas la vacían.
   process.env.BARRIDO ??= 'off';
   process.env.LIMITE_POR_MINUTO ??= '100000';
+  // Contador en memoria: en Redis quedaría entre corridas (el almacenamiento en Redis tiene su prueba).
+  process.env.LIMITE_REDIS ??= 'off';
   const { AppModule } = await import('../../src/app.module');
   const modulo = await overrides(
     Test.createTestingModule({ imports: [AppModule] }),

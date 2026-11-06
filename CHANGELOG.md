@@ -1,5 +1,13 @@
 # Cambios
 
+## 0.3.0 (2026-11-05)
+
+- NestJS 11 (Express 5) y multer 2.5: se cierran los avisos altos de `npm audit`.
+- Varias instancias: tiempo real por Redis pub/sub y límite de peticiones contado en Redis.
+- Un lead sin dueño no lo pueden tomar dos comerciales a la vez.
+- Las plantillas se listan y validan con el número de la conversación.
+- El calendario ya no se salta el día del cambio de horario de verano.
+
 ## 0.2.0 (2026-11-05)
 
 - Webhook durable: se guarda antes de responder 200; si falla responde 500 y Meta reintenta. Cada mensaje entrante crea su lead.

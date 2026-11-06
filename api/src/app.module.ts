@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleDestroy } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
@@ -21,14 +21,23 @@ import { LineasModule } from './lineas/lineas.module';
 import { MiembroActivoGuard } from './miembros/miembro-activo.guard';
 import { MiembrosModule } from './miembros/miembros.module';
 import { RolesGuard } from './miembros/roles.guard';
+import { LimiteRedis } from './common/limite-redis';
+
+// Con Redis el límite de peticiones es uno solo para todas las instancias; sin Redis, en memoria.
+const limite =
+  process.env.REDIS_URL && process.env.LIMITE_REDIS !== 'off'
+    ? new LimiteRedis(process.env.REDIS_URL)
+    : undefined;
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // ponytail: contador en memoria por instancia; usar almacenamiento en Redis si hay varias instancias.
-    ThrottlerModule.forRoot([
-      { ttl: 60_000, limit: Number(process.env.LIMITE_POR_MINUTO ?? 300) },
-    ]),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        { ttl: 60_000, limit: Number(process.env.LIMITE_POR_MINUTO ?? 300) },
+      ],
+      storage: limite,
+    }),
     TypeOrmModule.forRootAsync({ useClass: DatabaseConfig }),
     AuthModule,
     MiembrosModule,
@@ -53,4 +62,8 @@ import { RolesGuard } from './miembros/roles.guard';
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements OnModuleDestroy {
+  async onModuleDestroy() {
+    await limite?.onModuleDestroy();
+  }
+}
